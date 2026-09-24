@@ -1,0 +1,14 @@
+{
+  "checked_at_utc": "2026-09-24T14:56:25.568876+00:00",
+  "remote": "https://github.com/mikkokotila/Terasweep.git",
+  "fresh_clone_commit": "1b1cd072ede293b2744bf00c6f0317a2e97b0b34",
+  "source_commit": "70525ba2673ffe6d0cff7f94df82bb786446f925",
+  "fresh_clone_clean": true,
+  "git_fsck": "PASS",
+  "all_archive_checks": "PASS",
+  "mac_build": "PASS",
+  "mac_compact_1m_golden": "PASS",
+  "root_working_copy_build": "PASS",
+  "historical_executable_preserved_sha256": "8b85a5034450362ea5021f5832fb187f07fa8ea9c8f8e62431cd64d1a714965e",
+  "note": "Final handoff commit adds only these validation records and checksums; measured runtime source is unchanged."
+}

@@ -60,3 +60,13 @@ Unrelated pre-existing files in the user's Limen checkout are untouched.
 The original `target/terasweep` and `runs/` stay ignored and are preserved. The
 new build target is `target/terasweep-funnel`. A clean Git status means no
 uncommitted project material, not that ignored rebuildable files cannot exist.
+
+## Fresh clone result
+
+A new HTTPS clone from GitHub at `1b1cd072ede293b2744bf00c6f0317a2e97b0b34`
+passed all archive/source checks and `git fsck --full`. The Mac built the
+final source with its existing Rust 1.63.0 compiler, and the compact million-row
+run matched the golden output. The working copy at `~/dev/Terasweep` also builds;
+its historical executable is unchanged. See `fresh-clone-validation.json` and
+the `fresh-clone-integrity.txt` / `mac-*.txt` logs. The following commit records
+only handoff checks, not changes to the runtime or historical benchmark results.

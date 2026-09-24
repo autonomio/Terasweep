@@ -1,0 +1,17 @@
+Handoff files OK: 41 checksums
+Measured pipeline source OK: 22 files
+Archive OK: avx512_kernel_experiment.tar.gz: 42 files; 4 embedded checksums
+Archive OK: handwritten_avx512_experiment.tar.gz: 48 files; 33 embedded checksums
+Archive OK: inputs.tar.gz: 24 files; 0 embedded checksums
+Archive OK: terasweep_reverse_funnel_experiment.tar.gz: 525 files; 524 embedded checksums
+Archive OK: terasweep_rust_pipeline.tar.gz: 22 files; 0 embedded checksums
+Archive OK: terasweep_scaling_experiment.tar.gz: 223 files; 222 embedded checksums
+Archive OK: original-mac-runtime.tar.gz: 11 files; 0 embedded checksums
+Archive OK: ridge-side-by-side-20260922.tar.gz: 90 files; 0 embedded checksums
+Archive OK: terasweep-c-oracle-fU6UxO.tar.gz: 10 files; 0 embedded checksums
+Archive OK: terasweep-integrated-20260923-nJuU9e.tar.gz: 34 files; 0 embedded checksums
+Archive OK: terasweep-reverse-funnel-baseline-HYmASr.tar.gz: 2 files; 0 embedded checksums
+Archive OK: terasweep-simd-20260922-u3uJGl.tar.gz: 46 files; 0 embedded checksums
+Archive OK: terasweep-staged-20260923.tar.gz: 176 files; 0 embedded checksums
+Mac-history inventory OK: 358 member checksums
+{"archive_members": 1253, "archives": 13, "embedded_checksums": 783, "handoff_files": 41, "history_checksums": 358, "source_files": 22, "status": "PASS"}
