@@ -61,3 +61,9 @@ make verify
 ```
 
 The runner writes `summary.json` and `time.txt` under the selected run directory.
+
+## Execution-level comparison
+
+See [Ridge execution levels](docs/optimization-pipeline.md) for compact caching,
+Rust AVX-512 intrinsics, handwritten assembly, validation, and exact-plan replay.
+`make` now preserves the historical executable and builds `target/terasweep-funnel`.

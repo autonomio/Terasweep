@@ -18,9 +18,9 @@ pub struct Prices {
 }
 
 pub struct PriceStats {
-    tradable: Vec<bool>,
-    r_entry: Vec<f64>,
-    r_cont: Vec<f64>,
+    pub(crate) tradable: Vec<bool>,
+    pub(crate) r_entry: Vec<f64>,
+    pub(crate) r_cont: Vec<f64>,
 }
 
 pub struct RunOutput {
@@ -62,14 +62,14 @@ pub struct ScoreKey {
 
 #[derive(Clone, Copy)]
 pub struct BaseScore {
-    signal_count: usize,
-    eq_gross: f64,
-    entry_count: i32,
-    exit_count: i32,
-    sharpe_count: usize,
-    cat_count: [usize; 4],
-    cat_sum_a: [f64; 4],
-    cat_sum_a2: [f64; 4],
+    pub(crate) signal_count: usize,
+    pub(crate) eq_gross: f64,
+    pub(crate) entry_count: i32,
+    pub(crate) exit_count: i32,
+    pub(crate) sharpe_count: usize,
+    pub(crate) cat_count: [usize; 4],
+    pub(crate) cat_sum_a: [f64; 4],
+    pub(crate) cat_sum_a2: [f64; 4],
 }
 
 #[derive(Clone, Copy)]

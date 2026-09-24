@@ -2,6 +2,7 @@ mod dlinear;
 mod lightgbm;
 mod results;
 mod ridge;
+mod optimized;
 mod tide;
 
 use results::Prices;

@@ -5,6 +5,8 @@ use crate::results::{
     SplitMix64, SweepSummary,
 };
 use crate::Matrix;
+use crate::optimized::{self, Level};
+use std::time::Instant;
 
 const MAE_DECIMALS: i32 = 3;
 
@@ -38,12 +40,16 @@ struct ModelSpace {
     alphas: Vec<f64>,
     fit_intercepts: Vec<bool>,
     solver_eps: Vec<f64>,
+    plan: Option<Vec<Param>>,
 }
 
-struct Param {
-    id: usize,
-    train: TrainConfig,
-    score: ScoreConfig,
+#[derive(Clone, Copy)]
+pub(crate) struct Param {
+    pub(crate) id: usize,
+    pub(crate) train: TrainConfig,
+    pub(crate) score: ScoreConfig,
+    pub(crate) train_ordinal: usize,
+    pub(crate) threshold_ordinal: usize,
 }
 
 pub fn run(
@@ -53,31 +59,87 @@ pub fn run(
     price_stats: &PriceStats,
     runs: usize,
 ) -> Result<RunOutput, Box<dyn std::error::Error>> {
+    let level=Level::from_env()?;
+    let start=Instant::now();
     let common = CommonSpace::from_json(config_json)?;
     let model = ModelSpace::from_json(config_json)?;
     let train_configs = model.train_configs();
-    let stats = precompute_stats(train);
-    let train_cache = precompute_train_cache(&stats, test, &train_configs)?;
+    if model.plan.as_ref().map_or(false, |p| p.len()!=runs) {return Err("plan row count does not match requested runs".into());}
+    let uncached=matches!(level,Level::Naive|Level::Stats);
+    let stats = if level==Level::Naive {None} else {Some(precompute_stats(train))};
+    let stats_s=start.elapsed().as_secs_f64();
+    let start=Instant::now();
+    let mut train_cache = if uncached {
+        let mut seen=HashSet::new();
+        train_configs.iter().filter(|&&c|seen.insert(cache_key(c))).map(|&config|FitOut{config,preds:Vec::new(),mae:f64::NAN,fit_failed:false}).collect()
+    } else {precompute_train_cache(stats.as_ref().unwrap(), test, &train_configs)?};
+    let fit_s=start.elapsed().as_secs_f64();
+    let mut visited=vec![!uncached;train_cache.len()];
     let train_index: HashMap<TrainKey, usize> = train_cache
         .iter()
         .enumerate()
         .map(|(idx, entry)| (cache_key(entry.config), idx))
         .collect();
+    let ordinal_to_cache: Vec<usize>=train_configs.iter().map(|&c|train_index[&cache_key(c)]).collect();
     let mut score_cache: HashMap<ScoreKey, BaseScore> = HashMap::new();
     let mut summary = SweepSummary::new();
 
-    for id in 0..runs {
-        let param = model.sample(&common, id);
-        let row = evaluate(
-            &param,
-            &train_index,
-            &train_cache,
-            &mut score_cache,
-            price_stats,
-        )?;
-        summary.record(row);
-    }
+    let start=Instant::now();
+    let mut bounds=optimized::OnlineBounds::new(train_cache.len());
+    let score_cache_entries=if matches!(level,Level::Compact|Level::Intrinsics|Level::Assembly) {
+        optimized::compact(level,runs,|id|model.sample(&common,id),&common,&ordinal_to_cache,&train_index,&train_cache,price_stats,&mut summary)?
+    } else {
+        for id in 0..runs {
+            let param=model.sample(&common,id);
+            if level==Level::Score {
+                summary.record(evaluate(&param,&train_index,&train_cache,&mut score_cache,price_stats)?);
+                continue;
+            }
+            let idx=train_index[&cache_key(param.train)];
+            if uncached {
+                let per_trial;
+                let fit_stats=if level==Level::Naive {per_trial=precompute_stats(train);&per_trial} else {stats.as_ref().unwrap()};
+                train_cache[idx]=precompute_train_cache(fit_stats,test,&[param.train])?.pop().unwrap();
+                visited[idx]=true;
+            }
+            let entry=&train_cache[idx];
+            let score=if entry.fit_failed {(f64::NAN,f64::NAN,f64::NAN)} else {
+                let base=if level==Level::Bounds {
+                    let key=ScoreKey{train_idx:idx,threshold_bits:param.score.threshold.to_bits(),rule_idx:param.score.signal_rule.index()};
+                    *score_cache.entry(key).or_insert_with(||bounds.base(idx,&entry.preds,param.score,price_stats))
+                } else {results::compute_base_score(&entry.preds,param.score.threshold,param.score.signal_rule,price_stats)};
+                results::apply_costs(&base,entry.preds.len(),param.score)
+            };
+            summary.record(ScoredRow{id, signal_rule:param.score.signal_rule,fit_failed:entry.fit_failed,mae:results::round_to(entry.mae,3),signal_rate:score.0,net_return:score.1,sharpe:score.2});
+        }
+        score_cache.len()
+    };
+    eprintln!("PHASE level={level:?} stats={stats_s:.9} fit_predict={fit_s:.9} sweep={:.9}",start.elapsed().as_secs_f64());
 
+    // Fill only unvisited configurations to preserve complete configured-pool
+    // failure accounting. This does not replace any uncached trial fit.
+    if visited.iter().any(|&x|!x) {
+        let extra_stats;
+        let fit_stats=match stats.as_ref() {Some(s)=>s,None=>{extra_stats=precompute_stats(train);&extra_stats}};
+        for idx in 0..train_cache.len() {
+            if !visited[idx] {train_cache[idx]=precompute_train_cache(fit_stats,test,&[train_cache[idx].config])?.pop().unwrap();}
+        }
+    }
+    if let Some(path)=std::env::var_os("TERASWEEP_EXPORT_PREDICTIONS") {
+        use std::io::Write;
+        let mut out=std::io::BufWriter::new(std::fs::File::create(path)?);
+        out.write_all(b"PRED0001")?;
+        out.write_all(&(train_cache.len() as u64).to_le_bytes())?;
+        for e in &train_cache {
+            out.write_all(&e.config.alpha.to_le_bytes())?;
+            out.write_all(&(e.config.fit_intercept as u64).to_le_bytes())?;
+            out.write_all(&e.config.solver_eps.to_le_bytes())?;
+            out.write_all(&(e.fit_failed as u64).to_le_bytes())?;
+            out.write_all(&(e.preds.len() as u64).to_le_bytes())?;
+            for value in &e.preds {out.write_all(&value.to_le_bytes())?;}
+        }
+        out.flush()?;
+    }
     let best_return_json = row_json(
         summary.best_return(),
         &model,
@@ -106,7 +168,7 @@ pub fn run(
         unique_alphas: model.alphas.len(),
         unique_train_configs: train_cache.len(),
         failed_train_configs: train_cache.iter().filter(|entry| entry.fit_failed).count(),
-        score_cache_entries: score_cache.len(),
+        score_cache_entries,
         best_return_json,
         best_sharpe_json,
         best_mae_json,
@@ -125,6 +187,7 @@ impl ModelSpace {
             ),
             fit_intercepts: results::json_bool_array(src, "fit_intercept")?,
             solver_eps: results::json_f64_array(src, "solver_eps")?,
+            plan: read_plan()?,
         })
     }
 
@@ -147,6 +210,7 @@ impl ModelSpace {
     }
 
     fn sample(&self, common: &CommonSpace, id: usize) -> Param {
+        if let Some(plan)=&self.plan {return plan[id];}
         let mut rng = SplitMix64::new(common.seed ^ results::mix_id(id as u64));
         let signal_rule = common.signal_rules[rng.index(common.signal_rules.len())];
         let thresholds = if signal_rule.is_abs() {
@@ -154,14 +218,20 @@ impl ModelSpace {
         } else {
             &common.threshold_signed
         };
-        let alpha = self.alphas[rng.index(self.alphas.len())];
-        let threshold = thresholds[rng.index(thresholds.len())];
-        let fit_intercept = self.fit_intercepts[rng.index(self.fit_intercepts.len())];
-        let solver_eps = self.solver_eps[rng.index(self.solver_eps.len())];
+        let ai=rng.index(self.alphas.len());
+        let ti=rng.index(thresholds.len());
+        let fi=rng.index(self.fit_intercepts.len());
+        let ei=rng.index(self.solver_eps.len());
+        let alpha = self.alphas[ai];
+        let threshold = thresholds[ti];
+        let fit_intercept = self.fit_intercepts[fi];
+        let solver_eps = self.solver_eps[ei];
         let fee_bps = common.fee_bps[rng.index(common.fee_bps.len())];
         let slippage_bps = common.slippage_bps[rng.index(common.slippage_bps.len())];
         Param {
             id,
+            train_ordinal: (ai*self.fit_intercepts.len()+fi)*self.solver_eps.len()+ei,
+            threshold_ordinal: ti,
             train: TrainConfig {
                 alpha,
                 fit_intercept,
@@ -442,4 +512,59 @@ fn solve_spd_in_place(
     }
 
     Ok(())
+}
+
+fn read_plan() -> Result<Option<Vec<Param>>,Box<dyn std::error::Error>> {
+    let path=match std::env::var_os("TERASWEEP_PLAN") {Some(p)=>p,None=>return Ok(None)};
+    let text=std::fs::read_to_string(path)?;
+    let mut rows=Vec::new();
+    for (line_no,line) in text.lines().enumerate() {
+        if line_no==0 {if line!="alpha,fit_intercept,solver_eps,threshold,fee_bps,slippage_bps,signal_rule" {return Err("invalid plan header".into());} continue;}
+        let c:Vec<_>=line.split(',').collect();
+        if c.len()!=7 {return Err("invalid plan row".into());}
+        let signal_rule=match c[6] {"gt"=>results::SignalRule::Gt,"gte"=>results::SignalRule::Gte,"lt"=>results::SignalRule::Lt,"lte"=>results::SignalRule::Lte,"abs_gt"=>results::SignalRule::AbsGt,"abs_gte"=>results::SignalRule::AbsGte,_=>return Err("invalid plan rule".into())};
+        rows.push(Param{id:rows.len(),train_ordinal:usize::MAX,threshold_ordinal:usize::MAX,train:TrainConfig{alpha:c[0].parse()?,fit_intercept:c[1].parse()?,solver_eps:c[2].parse()?},score:ScoreConfig{threshold:c[3].parse()?,fee_bps:c[4].parse()?,slippage_bps:c[5].parse()?,signal_rule}});
+    }
+    Ok(Some(rows))
+}
+
+#[cfg(all(test,target_arch="x86_64"))]
+mod boundary_tests {
+    use super::*;
+    #[test]
+    fn real_prediction_boundaries_and_masks() {
+        let train=crate::read_matrix(include_bytes!("../data/train.bin")).unwrap();
+        let test=crate::read_matrix(include_bytes!("../data/test.bin")).unwrap();
+        let p=crate::read_prices(include_bytes!("../data/price.bin")).unwrap();
+        let p=results::precompute_price_stats(&p);
+        let stats=precompute_stats(&train);
+        let cfg=[TrainConfig{alpha:1.0,fit_intercept:true,solver_eps:1e-12},TrainConfig{alpha:10.0,fit_intercept:false,solver_eps:1e-12}];
+        let cache=precompute_train_cache(&stats,&test,&cfg).unwrap();
+        let mut checked=0usize;
+        for e in cache {
+            assert!(!e.fit_failed);
+            let mut thresholds=vec![0.0,-0.0];
+            thresholds.extend(e.preds.iter().take(8));
+            thresholds.push(e.preds.iter().copied().fold(f64::INFINITY,f64::min));
+            thresholds.push(e.preds.iter().copied().fold(f64::NEG_INFINITY,f64::max));
+            let nearby:Vec<_>=thresholds.iter().flat_map(|&x|[x,x.next_up(),x.next_down()]).collect();
+            for n in [0,1,2,7,8,9,16,17,31,e.preds.len()] {
+                for missing in [false,true] {
+                    let mut prices=PriceStats{tradable:p.tradable[..n].to_vec(),r_entry:p.r_entry[..n].to_vec(),r_cont:p.r_cont[..n].to_vec()};
+                    if missing {for (i,x) in prices.tradable.iter_mut().enumerate() {if i%11==0 {*x=false;}}}
+                    let rules=[results::SignalRule::Gt,results::SignalRule::Gte,results::SignalRule::Lt,results::SignalRule::Lte,results::SignalRule::AbsGt,results::SignalRule::AbsGte];
+                    let jobs:Vec<_>=nearby.iter().flat_map(|&t|rules.iter().map(move |&r|(t,r))).collect();
+                    for used in 1..=8 {
+                        for batch in jobs.chunks(used) {
+                            for assembly in [false,true] {
+                                let output=optimized::test_batch(&e.preds[..n],&prices,batch,assembly);
+                                for (&(t,r),b) in batch.iter().zip(output) {assert!(optimized::same_base(&b,&results::compute_base_score(&e.preds[..n],t,r,&prices)));checked+=1;}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        eprintln!("Boundary and mask full-BaseScore comparisons: {checked}");
+    }
 }
