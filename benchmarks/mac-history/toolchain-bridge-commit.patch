@@ -1,0 +1,162 @@
+commit 4baa361bc52bf7e860a0ec2faf07005ccd5b086c
+Author:     Mikko Kotila <mailme@mikkokotila.com>
+AuthorDate: Wed Sep 23 12:16:24 2026 +0300
+Commit:     Mikko Kotila <mailme@mikkokotila.com>
+CommitDate: Wed Sep 23 12:16:24 2026 +0300
+
+    build: stage pinned Rust and Limen for offline benchmark
+
+diff --git a/.github/workflows/avx512-flag-probe.yml b/.github/workflows/avx512-flag-probe.yml
+index 7e11ddf..ac3a702 100644
+--- a/.github/workflows/avx512-flag-probe.yml
++++ b/.github/workflows/avx512-flag-probe.yml
+@@ -1,121 +1,37 @@
+ name: AVX-512 flag probe
+-
+ on:
+   workflow_dispatch:
+-
++permissions:
++  contents: read
+ jobs:
+-  probe:
+-    name: Print CPU flags (${{ matrix.runner }})
+-    runs-on: ${{ matrix.runner }}
+-    strategy:
+-      fail-fast: false
+-      matrix:
+-        runner:
+-          - ubuntu-latest
+-          - ubuntu-24.04
+-          - ubuntu-22.04
+-          - windows-latest
+-          - windows-2022
+-          - windows-2025
++  offline:
++    runs-on: ubuntu-24.04
++    timeout-minutes: 10
+     steps:
+-      - name: Probe Linux runner CPU
+-        if: runner.os == 'Linux'
++      - uses: actions/setup-python@v5
++        with:
++          python-version: '3.13'
++      - name: Obtain pinned public compiler and native Python dependencies
+         shell: bash
+         run: |
+           set -euo pipefail
+-
+-          {
+-            echo "=== runner ==="
+-            echo "label=${{ matrix.runner }}"
+-            echo "os=${{ runner.os }}"
+-            echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+-            echo "uname=$(uname -srmo)"
+-            echo
+-
+-            echo "=== cpu ==="
+-            awk -F: '/^model name/{gsub(/^ /,"",$2); print "model=" $2; exit}' /proc/cpuinfo
+-            awk -F: '/^cpu family/{f=$2+0}/^model[[:space:]]*:/{m=$2+0; print "family_model=" f ":" m; exit}' /proc/cpuinfo
+-            echo "virt=$(systemd-detect-virt 2>/dev/null || true)"
+-            echo
+-
+-            echo "=== required avx512 flags ==="
+-            flags="$(awk -F: '/^flags/{print $2; exit}' /proc/cpuinfo)"
+-            for f in avx512f avx512bw avx512dq avx512vl avx512vbmi avx512_vpopcntdq; do
+-              if grep -qw "$f" <<<"$flags"; then
+-                echo "$f=yes"
+-              else
+-                echo "$f=no"
+-              fi
+-            done
+-            echo
+-
+-            echo "=== all avx/popcnt flags ==="
+-            tr ' ' '\n' <<<"$flags" | grep -E '^(avx|avx512|popcnt|bmi|fma)' | sort || true
+-            echo
+-
+-            echo "=== raw flags ==="
+-            echo "$flags"
+-          } | tee avx512-flag-report.txt
+-
+-          echo "### AVX-512 flag probe" >> "$GITHUB_STEP_SUMMARY"
+-          cat avx512-flag-report.txt >> "$GITHUB_STEP_SUMMARY"
+-
+-      - name: Probe Windows runner CPU
+-        if: runner.os == 'Windows'
+-        shell: pwsh
+-        run: |
+-          $ErrorActionPreference = "Stop"
+-          $required = @(
+-            "avx512f",
+-            "avx512bw",
+-            "avx512dq",
+-            "avx512vl",
+-            "avx512vbmi",
+-            "avx512_vpopcntdq"
+-          )
+-          $cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
+-          $cpuInfoExe = Join-Path $env:RUNNER_TEMP "Coreinfo64.exe"
+-          $cpuInfoZip = Join-Path $env:RUNNER_TEMP "Coreinfo.zip"
+-          Invoke-WebRequest -Uri "https://download.sysinternals.com/files/Coreinfo.zip" -OutFile $cpuInfoZip
+-          Expand-Archive -Path $cpuInfoZip -DestinationPath $env:RUNNER_TEMP -Force
+-          $coreinfo = & $cpuInfoExe -accepteula -f 2>&1 | Out-String
+-          $lower = $coreinfo.ToLowerInvariant()
+-
+-          $lines = New-Object System.Collections.Generic.List[string]
+-          $lines.Add("=== runner ===")
+-          $lines.Add("label=${{ matrix.runner }}")
+-          $lines.Add("os=${{ runner.os }}")
+-          $lines.Add("date=$((Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'))")
+-          $lines.Add("windows=$([System.Environment]::OSVersion.VersionString)")
+-          $lines.Add("")
+-          $lines.Add("=== cpu ===")
+-          $lines.Add("model=$($cpu.Name)")
+-          $lines.Add("manufacturer=$($cpu.Manufacturer)")
+-          $lines.Add("logical_processors=$($cpu.NumberOfLogicalProcessors)")
+-          $lines.Add("")
+-          $lines.Add("=== required avx512 flags ===")
+-          foreach ($f in $required) {
+-            $coreinfoName = $f.ToUpperInvariant().Replace("_", "")
+-            if ($lower -match "(?m)^$coreinfoName\s+\*") {
+-              $lines.Add("$f=yes")
+-            } else {
+-              $lines.Add("$f=no")
+-            }
+-          }
+-          $lines.Add("")
+-          $lines.Add("=== coreinfo avx/popcnt lines ===")
+-          foreach ($line in ($coreinfo -split "`r?`n")) {
+-            if ($line -match "AVX|POPCNT|BMI|FMA") {
+-              $lines.Add($line)
+-            }
+-          }
+-
+-          $lines | Tee-Object -FilePath avx512-flag-report.txt
+-          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "### AVX-512 flag probe"
+-          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value (Get-Content avx512-flag-report.txt -Raw)
+-
+-      - name: Upload probe report
+-        uses: actions/upload-artifact@v4
++          mkdir -p bundle/wheels
++          cd bundle
++          for part in rustc rust-std; do
++            file="${part}-1.89.0-x86_64-unknown-linux-gnu.tar.xz"
++            curl -fL --retry 3 "https://static.rust-lang.org/dist/$file" -o "$file"
++            curl -fL --retry 3 "https://static.rust-lang.org/dist/$file.sha256" -o "$file.sha256"
++            sha256sum -c "$file.sha256"
++          done
++          python -m pip download -d wheels --only-binary=:all: 'polars==1.42.1' 'pyarrow==23.0.1' 'pandas==2.3.3'
++          curl -fL https://api.github.com/repos/Vaquum/Limen/tarball/44eff3b244c80ce8473845bd60b074b3682fe441 -o limen-source.tar.gz
++          tar xzf limen-source.tar.gz
++          python -m pip wheel --no-deps --wheel-dir wheels ./Vaquum-Limen-*
++          sha256sum wheels/* > wheel-sha256.txt
++          lscpu > build-host.txt
++      - uses: actions/upload-artifact@v4
+         with:
+-          name: avx512-flag-report-${{ matrix.runner }}
+-          path: avx512-flag-report.txt
++          name: terasweep-offline-rust-and-limen
++          path: bundle/
++          retention-days: 3
++          compression-level: 0

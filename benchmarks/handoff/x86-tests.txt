@@ -1,0 +1,10 @@
+mkdir -p target
+/mnt/data/terasweep-handoff-work/rust/bin/rustc --test src/sweep.rs --edition=2021 -O -C target-cpu=native -o target/terasweep-tests
+./target/terasweep-tests --nocapture
+
+running 1 test
+Boundary and mask full-BaseScore comparisons: 138240
+test ridge::boundary_tests::real_prediction_boundaries_and_masks ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+

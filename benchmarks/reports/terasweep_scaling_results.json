@@ -1,0 +1,1671 @@
+{
+  "status": "complete",
+  "measured_date_utc": "2026-09-23",
+  "levels": [
+    "original",
+    "bounds",
+    "compact",
+    "intrinsics",
+    "assembly"
+  ],
+  "sizes": [
+    100000,
+    1000000,
+    10000000,
+    100000000,
+    1000000000
+  ],
+  "rust_measurements_per_cell": 1,
+  "rust_timings_are_extrapolated": false,
+  "native_large_run_timings_are_extrapolated": true,
+  "native_models": {
+    "limen-cli": {
+      "seconds_per_row": 0.015638136524579894,
+      "startup_seconds": 1.4095280597816555,
+      "formula": "startup_seconds + seconds_per_row * N",
+      "calibration_n": [
+        128,
+        512,
+        1014
+      ],
+      "time_boundary": "complete process",
+      "projection_only": true,
+      "all_measurements": [
+        {
+          "mode": "limen-cli",
+          "n": 128,
+          "repeat": 0,
+          "wall_seconds": 3.29396590500005,
+          "directory": "native-calibration/limen-cli-128-r0",
+          "sum_logged_round_seconds": 1.78,
+          "warning_rounds": 128,
+          "input_contract": "Full native Limen CLI, retained 13-feature raw-data workload used in preceding comparison"
+        },
+        {
+          "mode": "limen-cli",
+          "n": 512,
+          "repeat": 0,
+          "wall_seconds": 9.097616943000048,
+          "directory": "native-calibration/limen-cli-512-r0",
+          "sum_logged_round_seconds": 6.12,
+          "warning_rounds": 512,
+          "input_contract": "Full native Limen CLI, retained 13-feature raw-data workload used in preceding comparison"
+        },
+        {
+          "mode": "limen-cli",
+          "n": 1014,
+          "repeat": 0,
+          "wall_seconds": 17.322238137999875,
+          "directory": "native-calibration/limen-cli-1014-r0",
+          "sum_logged_round_seconds": 13.11,
+          "warning_rounds": 1014,
+          "input_contract": "Full native Limen CLI, retained 13-feature raw-data workload used in preceding comparison"
+        },
+        {
+          "mode": "limen-cli",
+          "n": 128,
+          "repeat": 1,
+          "wall_seconds": 3.448535550000088,
+          "directory": "native-calibration/limen-cli-128-r1",
+          "sum_logged_round_seconds": 1.8900000000000001,
+          "warning_rounds": 128,
+          "input_contract": "Full native Limen CLI, retained 13-feature raw-data workload used in preceding comparison"
+        },
+        {
+          "mode": "limen-cli",
+          "n": 512,
+          "repeat": 1,
+          "wall_seconds": 9.875940792000165,
+          "directory": "native-calibration/limen-cli-512-r1",
+          "sum_logged_round_seconds": 8.19,
+          "warning_rounds": 512,
+          "input_contract": "Full native Limen CLI, retained 13-feature raw-data workload used in preceding comparison"
+        },
+        {
+          "mode": "limen-cli",
+          "n": 1014,
+          "repeat": 1,
+          "wall_seconds": 17.14982665399998,
+          "directory": "native-calibration/limen-cli-1014-r1",
+          "sum_logged_round_seconds": 12.61,
+          "warning_rounds": 1014,
+          "input_contract": "Full native Limen CLI, retained 13-feature raw-data workload used in preceding comparison"
+        }
+      ]
+    },
+    "sklearn": {
+      "seconds_per_row": 0.0036834459592633966,
+      "startup_seconds": 0.12929624092850983,
+      "formula": "startup_seconds + seconds_per_row * N",
+      "calibration_n": [
+        256,
+        2048
+      ],
+      "time_boundary": "uncached native prepared-data loop",
+      "projection_only": true,
+      "all_measurements": [
+        {
+          "mode": "sklearn",
+          "n": 256,
+          "repeat": 0,
+          "wall_seconds": 2.276890832999925,
+          "directory": "native-calibration/sklearn-256-r0",
+          "compute_seconds": 1.12191027699987,
+          "mae_checksum": 28.873255229892173,
+          "warning_count": 21,
+          "fits": 256,
+          "cached_fits": false,
+          "train_shape": [
+            4136,
+            55
+          ],
+          "test_shape": [
+            1136,
+            55
+          ],
+          "first_sample": {
+            "alpha": 30964.32511816367,
+            "fit_intercept": false,
+            "fee_bps": 20.0,
+            "slippage_bps": 50.0
+          },
+          "native_signal_contract": "prediction > 0; no substitution of Terasweep economics or solver_eps"
+        },
+        {
+          "mode": "sklearn",
+          "n": 2048,
+          "repeat": 0,
+          "wall_seconds": 8.959885577000023,
+          "directory": "native-calibration/sklearn-2048-r0",
+          "compute_seconds": 7.7468117599999005,
+          "mae_checksum": 230.6581368096233,
+          "warning_count": 176,
+          "fits": 2048,
+          "cached_fits": false,
+          "train_shape": [
+            4136,
+            55
+          ],
+          "test_shape": [
+            1136,
+            55
+          ],
+          "first_sample": {
+            "alpha": 30964.32511816367,
+            "fit_intercept": false,
+            "fee_bps": 20.0,
+            "slippage_bps": 50.0
+          },
+          "native_signal_contract": "prediction > 0; no substitution of Terasweep economics or solver_eps"
+        },
+        {
+          "mode": "sklearn",
+          "n": 256,
+          "repeat": 1,
+          "wall_seconds": 2.1624226080000426,
+          "directory": "native-calibration/sklearn-256-r1",
+          "compute_seconds": 1.022606536000012,
+          "mae_checksum": 28.873255229892173,
+          "warning_count": 21,
+          "fits": 256,
+          "cached_fits": false,
+          "train_shape": [
+            4136,
+            55
+          ],
+          "test_shape": [
+            1136,
+            55
+          ],
+          "first_sample": {
+            "alpha": 30964.32511816367,
+            "fit_intercept": false,
+            "fee_bps": 20.0,
+            "slippage_bps": 50.0
+          },
+          "native_signal_contract": "prediction > 0; no substitution of Terasweep economics or solver_eps"
+        },
+        {
+          "mode": "sklearn",
+          "n": 2048,
+          "repeat": 1,
+          "wall_seconds": 8.835048968000137,
+          "directory": "native-calibration/sklearn-2048-r1",
+          "compute_seconds": 7.599175371000001,
+          "mae_checksum": 230.6581368096233,
+          "warning_count": 176,
+          "fits": 2048,
+          "cached_fits": false,
+          "train_shape": [
+            4136,
+            55
+          ],
+          "test_shape": [
+            1136,
+            55
+          ],
+          "first_sample": {
+            "alpha": 30964.32511816367,
+            "fit_intercept": false,
+            "fee_bps": 20.0,
+            "slippage_bps": 50.0
+          },
+          "native_signal_contract": "prediction > 0; no substitution of Terasweep economics or solver_eps"
+        }
+      ]
+    },
+    "limen-prepared": {
+      "seconds_per_row": 0.0062531908111048825,
+      "startup_seconds": 0.12049210335711938,
+      "formula": "startup_seconds + seconds_per_row * N",
+      "calibration_n": [
+        256,
+        2048
+      ],
+      "time_boundary": "uncached native prepared-data loop",
+      "projection_only": true,
+      "all_measurements": [
+        {
+          "mode": "limen-prepared",
+          "n": 256,
+          "repeat": 0,
+          "wall_seconds": 3.0718159530001685,
+          "directory": "native-calibration/limen-prepared-256-r0",
+          "compute_seconds": 1.7709843229999933,
+          "mae_checksum": 28.876000000000037,
+          "warning_count": 21,
+          "fits": 256,
+          "cached_fits": false,
+          "train_shape": [
+            4136,
+            55
+          ],
+          "test_shape": [
+            1136,
+            55
+          ],
+          "first_sample": {
+            "alpha": 30964.32511816367,
+            "fit_intercept": false,
+            "fee_bps": 20.0,
+            "slippage_bps": 50.0
+          },
+          "native_signal_contract": "prediction > 0; no substitution of Terasweep economics or solver_eps"
+        },
+        {
+          "mode": "limen-prepared",
+          "n": 2048,
+          "repeat": 0,
+          "wall_seconds": 13.613501461999931,
+          "directory": "native-calibration/limen-prepared-2048-r0",
+          "compute_seconds": 12.338360652999881,
+          "mae_checksum": 230.67299999999852,
+          "warning_count": 176,
+          "fits": 2048,
+          "cached_fits": false,
+          "train_shape": [
+            4136,
+            55
+          ],
+          "test_shape": [
+            1136,
+            55
+          ],
+          "first_sample": {
+            "alpha": 30964.32511816367,
+            "fit_intercept": false,
+            "fee_bps": 20.0,
+            "slippage_bps": 50.0
+          },
+          "native_signal_contract": "prediction > 0; no substitution of Terasweep economics or solver_eps"
+        },
+        {
+          "mode": "limen-prepared",
+          "n": 256,
+          "repeat": 1,
+          "wall_seconds": 2.824592095000071,
+          "directory": "native-calibration/limen-prepared-256-r1",
+          "compute_seconds": 1.6716335789999448,
+          "mae_checksum": 28.876000000000037,
+          "warning_count": 21,
+          "fits": 256,
+          "cached_fits": false,
+          "train_shape": [
+            4136,
+            55
+          ],
+          "test_shape": [
+            1136,
+            55
+          ],
+          "first_sample": {
+            "alpha": 30964.32511816367,
+            "fit_intercept": false,
+            "fee_bps": 20.0,
+            "slippage_bps": 50.0
+          },
+          "native_signal_contract": "prediction > 0; no substitution of Terasweep economics or solver_eps"
+        },
+        {
+          "mode": "limen-prepared",
+          "n": 2048,
+          "repeat": 1,
+          "wall_seconds": 14.71313750299987,
+          "directory": "native-calibration/limen-prepared-2048-r1",
+          "compute_seconds": 13.515693115999966,
+          "mae_checksum": 230.67299999999852,
+          "warning_count": 176,
+          "fits": 2048,
+          "cached_fits": false,
+          "train_shape": [
+            4136,
+            55
+          ],
+          "test_shape": [
+            1136,
+            55
+          ],
+          "first_sample": {
+            "alpha": 30964.32511816367,
+            "fit_intercept": false,
+            "fee_bps": 20.0,
+            "slippage_bps": 50.0
+          },
+          "native_signal_contract": "prediction > 0; no substitution of Terasweep economics or solver_eps"
+        }
+      ]
+    }
+  },
+  "primary_same_matrix_reference": "limen-prepared",
+  "full_cli_reference": "limen-cli",
+  "important_limits": [
+    "All five deployable Rust stages were actually executed at every requested size; no Rust value is inferred.",
+    "Native runtimes above calibration sizes are conditional linear extrapolations, not completed native sweeps.",
+    "The native prepared Ridge wrapper and sklearn calibrations use the same original 55-feature matrices and sampled alpha/intercept/cost sequence as Rust, but retain native prediction > 0 scoring and native backend behavior.",
+    "The full native CLI reference repeats the earlier 13-feature raw-data workflow; it is a separately labeled throughput normalization, not a same-input end-to-end comparison with the 55-feature Rust workload.",
+    "Terasweep retains its different backtest economics and solver_eps failure convention. Sample counts include cached failures and repeated draws.",
+    "The 1b sweep is sampled with replacement; it does not contain 1b distinct configurations.",
+    "Shared VM; one timed process per cell; percent-level ordering differences are not statistically established.",
+    "Timing includes each complete Rust process from fresh computational caches, with normal OS file caching."
+  ],
+  "rows": [
+    {
+      "n": 100000,
+      "level": "original",
+      "repeat": 0,
+      "wall_seconds": 0.5607616290000124,
+      "internal_seconds": 0.555648832,
+      "user_seconds": 0.54,
+      "sys_seconds": 0.01,
+      "peak_rss_kib": 50932,
+      "rows": 100000,
+      "valid_rows": 72832,
+      "failed_rows": 27168,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 71979,
+      "stable_output_match": true,
+      "stable_output_sha256": "4eddd34d5a1c2c5b922e8242538fd6acf927eb436022a83dc67c1f0a2370ba8d",
+      "directory": "measurements/100000-original-r0",
+      "native_estimates_seconds": {
+        "limen-cli": 1565.223180517771,
+        "sklearn": 368.47389216726816,
+        "limen-prepared": 625.4395732138454
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 2791.2451558231287,
+        "sklearn": 657.095409370922,
+        "limen-prepared": 1115.3394613129487
+      },
+      "measured_gain_vs_original_rust": 1.0,
+      "sampled_rows_per_second": 178328.8920433566
+    },
+    {
+      "n": 100000,
+      "level": "bounds",
+      "repeat": 0,
+      "wall_seconds": 0.20036377799999627,
+      "internal_seconds": 0.195253384,
+      "user_seconds": 0.17,
+      "sys_seconds": 0.02,
+      "peak_rss_kib": 51144,
+      "rows": 100000,
+      "valid_rows": 72832,
+      "failed_rows": 27168,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 71979,
+      "stable_output_match": true,
+      "stable_output_sha256": "4eddd34d5a1c2c5b922e8242538fd6acf927eb436022a83dc67c1f0a2370ba8d",
+      "directory": "measurements/100000-bounds-r0",
+      "stats_seconds": 0.005971151,
+      "fit_predict_seconds": 0.115386739,
+      "sweep_seconds": 0.072641434,
+      "native_estimates_seconds": {
+        "limen-cli": 1565.223180517771,
+        "sklearn": 368.47389216726816,
+        "limen-prepared": 625.4395732138454
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 7811.906903241763,
+        "sklearn": 1839.0244776043053,
+        "limen-prepared": 3121.5201642577185
+      },
+      "measured_gain_vs_original_rust": 2.798717585570895,
+      "sampled_rows_per_second": 499092.2061771158
+    },
+    {
+      "n": 100000,
+      "level": "compact",
+      "repeat": 0,
+      "wall_seconds": 0.1792162899999994,
+      "internal_seconds": 0.174153853,
+      "user_seconds": 0.16,
+      "sys_seconds": 0.0,
+      "peak_rss_kib": 39696,
+      "rows": 100000,
+      "valid_rows": 72832,
+      "failed_rows": 27168,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 71979,
+      "stable_output_match": true,
+      "stable_output_sha256": "4eddd34d5a1c2c5b922e8242538fd6acf927eb436022a83dc67c1f0a2370ba8d",
+      "directory": "measurements/100000-compact-r0",
+      "stats_seconds": 0.006146866,
+      "fit_predict_seconds": 0.115068826,
+      "sweep_seconds": 0.05204814,
+      "plan_seconds": 0.017697969,
+      "mixed_score_seconds": 0.030259946,
+      "cost_reduce_seconds": 0.003506736,
+      "constant_mixed": [
+        44283,
+        22683,
+        5013
+      ],
+      "native_estimates_seconds": {
+        "limen-cli": 1565.223180517771,
+        "sklearn": 368.47389216726816,
+        "limen-prepared": 625.4395732138454
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 8733.710426199406,
+        "sklearn": 2056.029014813717,
+        "limen-prepared": 3489.858947609325
+      },
+      "measured_gain_vs_original_rust": 3.1289657262741812,
+      "sampled_rows_per_second": 557984.9912081114
+    },
+    {
+      "n": 100000,
+      "level": "intrinsics",
+      "repeat": 0,
+      "wall_seconds": 0.1694729220000113,
+      "internal_seconds": 0.164045887,
+      "user_seconds": 0.16,
+      "sys_seconds": 0.0,
+      "peak_rss_kib": 39664,
+      "rows": 100000,
+      "valid_rows": 72832,
+      "failed_rows": 27168,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 71979,
+      "stable_output_match": true,
+      "stable_output_sha256": "4eddd34d5a1c2c5b922e8242538fd6acf927eb436022a83dc67c1f0a2370ba8d",
+      "directory": "measurements/100000-intrinsics-r0",
+      "stats_seconds": 0.0061229,
+      "fit_predict_seconds": 0.122098803,
+      "sweep_seconds": 0.035118769,
+      "plan_seconds": 0.018373658,
+      "mixed_score_seconds": 0.011963895,
+      "cost_reduce_seconds": 0.004109044,
+      "constant_mixed": [
+        44283,
+        22683,
+        5013
+      ],
+      "native_estimates_seconds": {
+        "limen-cli": 1565.223180517771,
+        "sklearn": 368.47389216726816,
+        "limen-prepared": 625.4395732138454
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 9235.830491656163,
+        "sklearn": 2174.2346082121817,
+        "limen-prepared": 3690.4985518205895
+      },
+      "measured_gain_vs_original_rust": 3.308856791883101,
+      "sampled_rows_per_second": 590064.7656266488
+    },
+    {
+      "n": 100000,
+      "level": "assembly",
+      "repeat": 0,
+      "wall_seconds": 0.16507793599998877,
+      "internal_seconds": 0.159533038,
+      "user_seconds": 0.15,
+      "sys_seconds": 0.0,
+      "peak_rss_kib": 39740,
+      "rows": 100000,
+      "valid_rows": 72832,
+      "failed_rows": 27168,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 71979,
+      "stable_output_match": true,
+      "stable_output_sha256": "4eddd34d5a1c2c5b922e8242538fd6acf927eb436022a83dc67c1f0a2370ba8d",
+      "directory": "measurements/100000-assembly-r0",
+      "stats_seconds": 0.005963509,
+      "fit_predict_seconds": 0.120758548,
+      "sweep_seconds": 0.032091165,
+      "plan_seconds": 0.017220839,
+      "mixed_score_seconds": 0.010842645,
+      "cost_reduce_seconds": 0.003464863,
+      "constant_mixed": [
+        44283,
+        22683,
+        5013
+      ],
+      "native_estimates_seconds": {
+        "limen-cli": 1565.223180517771,
+        "sklearn": 368.47389216726816,
+        "limen-prepared": 625.4395732138454
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 9481.72250298718,
+        "sklearn": 2232.1207854651952,
+        "limen-prepared": 3788.7532905299227
+      },
+      "measured_gain_vs_original_rust": 3.396950813584503,
+      "sampled_rows_per_second": 605774.4749123033
+    },
+    {
+      "n": 1000000,
+      "level": "original",
+      "repeat": 0,
+      "wall_seconds": 4.725523362999979,
+      "internal_seconds": 4.719111677,
+      "user_seconds": 4.28,
+      "sys_seconds": 0.43,
+      "peak_rss_kib": 256556,
+      "rows": 1000000,
+      "valid_rows": 728102,
+      "failed_rows": 271898,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 648130,
+      "stable_output_match": true,
+      "stable_output_sha256": "db222bee26aaa49eca5aadb3b5e4de724bdca0b56578b704ef3bfcd94bd50c21",
+      "directory": "measurements/1000000-original-r0",
+      "native_estimates_seconds": {
+        "limen-cli": 15639.546052639675,
+        "sklearn": 3683.575255504325,
+        "limen-prepared": 6253.311303208239
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 3309.5902509115886,
+        "sklearn": 779.5063049198052,
+        "limen-prepared": 1323.3055521787433
+      },
+      "measured_gain_vs_original_rust": 1.0,
+      "sampled_rows_per_second": 211616.77198124232
+    },
+    {
+      "n": 1000000,
+      "level": "bounds",
+      "repeat": 0,
+      "wall_seconds": 1.1030103109999914,
+      "internal_seconds": 1.095989387,
+      "user_seconds": 0.76,
+      "sys_seconds": 0.33,
+      "peak_rss_kib": 256852,
+      "rows": 1000000,
+      "valid_rows": 728102,
+      "failed_rows": 271898,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 648130,
+      "stable_output_match": true,
+      "stable_output_sha256": "db222bee26aaa49eca5aadb3b5e4de724bdca0b56578b704ef3bfcd94bd50c21",
+      "directory": "measurements/1000000-bounds-r0",
+      "stats_seconds": 0.005750749,
+      "fit_predict_seconds": 0.117136077,
+      "sweep_seconds": 0.968272691,
+      "native_estimates_seconds": {
+        "limen-cli": 15639.546052639675,
+        "sklearn": 3683.575255504325,
+        "limen-prepared": 6253.311303208239
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 14178.96632213785,
+        "sklearn": 3339.565567764084,
+        "limen-prepared": 5669.313551148017
+      },
+      "measured_gain_vs_original_rust": 4.284205973302108,
+      "sampled_rows_per_second": 906609.8385729486
+    },
+    {
+      "n": 1000000,
+      "level": "compact",
+      "repeat": 0,
+      "wall_seconds": 0.5615765170000486,
+      "internal_seconds": 0.552658323,
+      "user_seconds": 0.52,
+      "sys_seconds": 0.02,
+      "peak_rss_kib": 55316,
+      "rows": 1000000,
+      "valid_rows": 728102,
+      "failed_rows": 271898,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 648130,
+      "stable_output_match": true,
+      "stable_output_sha256": "db222bee26aaa49eca5aadb3b5e4de724bdca0b56578b704ef3bfcd94bd50c21",
+      "directory": "measurements/1000000-compact-r0",
+      "stats_seconds": 0.011772285,
+      "fit_predict_seconds": 0.113533595,
+      "sweep_seconds": 0.426572967,
+      "plan_seconds": 0.125029655,
+      "mixed_score_seconds": 0.26415533,
+      "cost_reduce_seconds": 0.03531733,
+      "constant_mixed": [
+        394015,
+        209555,
+        44560
+      ],
+      "native_estimates_seconds": {
+        "limen-cli": 15639.546052639675,
+        "sklearn": 3683.575255504325,
+        "limen-prepared": 6253.311303208239
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 27849.359044046923,
+        "sklearn": 6559.347023949732,
+        "limen-prepared": 11135.279189759456
+      },
+      "measured_gain_vs_original_rust": 8.414745310654737,
+      "sampled_rows_per_second": 1780701.2396850516
+    },
+    {
+      "n": 1000000,
+      "level": "intrinsics",
+      "repeat": 0,
+      "wall_seconds": 0.30678537299996833,
+      "internal_seconds": 0.301645155,
+      "user_seconds": 0.28,
+      "sys_seconds": 0.01,
+      "peak_rss_kib": 55300,
+      "rows": 1000000,
+      "valid_rows": 728102,
+      "failed_rows": 271898,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 648130,
+      "stable_output_match": true,
+      "stable_output_sha256": "db222bee26aaa49eca5aadb3b5e4de724bdca0b56578b704ef3bfcd94bd50c21",
+      "directory": "measurements/1000000-intrinsics-r0",
+      "stats_seconds": 0.005906845,
+      "fit_predict_seconds": 0.115063162,
+      "sweep_seconds": 0.179950476,
+      "plan_seconds": 0.091956089,
+      "mixed_score_seconds": 0.051150657,
+      "cost_reduce_seconds": 0.035767457,
+      "constant_mixed": [
+        394015,
+        209555,
+        44560
+      ],
+      "native_estimates_seconds": {
+        "limen-cli": 15639.546052639675,
+        "sklearn": 3683.575255504325,
+        "limen-prepared": 6253.311303208239
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 50978.78656894535,
+        "sklearn": 12007.010697686377,
+        "limen-prepared": 20383.342406643635
+      },
+      "measured_gain_vs_original_rust": 15.40335289388281,
+      "sampled_rows_per_second": 3259607.8170914077
+    },
+    {
+      "n": 1000000,
+      "level": "assembly",
+      "repeat": 0,
+      "wall_seconds": 0.30924805600000127,
+      "internal_seconds": 0.302768558,
+      "user_seconds": 0.29,
+      "sys_seconds": 0.01,
+      "peak_rss_kib": 55312,
+      "rows": 1000000,
+      "valid_rows": 728102,
+      "failed_rows": 271898,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 648130,
+      "stable_output_match": true,
+      "stable_output_sha256": "db222bee26aaa49eca5aadb3b5e4de724bdca0b56578b704ef3bfcd94bd50c21",
+      "directory": "measurements/1000000-assembly-r0",
+      "stats_seconds": 0.006046114,
+      "fit_predict_seconds": 0.115460481,
+      "sweep_seconds": 0.180494837,
+      "plan_seconds": 0.093279234,
+      "mixed_score_seconds": 0.049492868,
+      "cost_reduce_seconds": 0.036623809,
+      "constant_mixed": [
+        394015,
+        209555,
+        44560
+      ],
+      "native_estimates_seconds": {
+        "limen-cli": 15639.546052639675,
+        "sklearn": 3683.575255504325,
+        "limen-prepared": 6253.311303208239
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 50572.81929248283,
+        "sklearn": 11911.393407447353,
+        "limen-prepared": 20221.020575172875
+      },
+      "measured_gain_vs_original_rust": 15.280688985155528,
+      "sampled_rows_per_second": 3233650.0766879385
+    },
+    {
+      "n": 10000000,
+      "level": "original",
+      "repeat": 0,
+      "wall_seconds": 24.161463335000008,
+      "internal_seconds": 24.152301234,
+      "user_seconds": 21.73,
+      "sys_seconds": 2.38,
+      "peak_rss_kib": 961584,
+      "rows": 10000000,
+      "valid_rows": 7278517,
+      "failed_rows": 2721483,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 2902005,
+      "stable_output_match": true,
+      "stable_output_sha256": "9b146ccf38109bf6dca70fcd610fc608b65e9d7a1ee3c9d31f64cd75cfe84b79",
+      "directory": "measurements/10000000-original-r0",
+      "native_estimates_seconds": {
+        "limen-cli": 156382.77477385872,
+        "sklearn": 36834.588888874896,
+        "limen-prepared": 62532.02860315218
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 6472.404945247024,
+        "sklearn": 1524.5181294759059,
+        "limen-prepared": 2588.0894603171255
+      },
+      "measured_gain_vs_original_rust": 1.0,
+      "sampled_rows_per_second": 413882.2165424939
+    },
+    {
+      "n": 10000000,
+      "level": "bounds",
+      "repeat": 0,
+      "wall_seconds": 7.646081794999986,
+      "internal_seconds": 7.639409843,
+      "user_seconds": 5.46,
+      "sys_seconds": 2.17,
+      "peak_rss_kib": 961804,
+      "rows": 10000000,
+      "valid_rows": 7278517,
+      "failed_rows": 2721483,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 2902005,
+      "stable_output_match": true,
+      "stable_output_sha256": "9b146ccf38109bf6dca70fcd610fc608b65e9d7a1ee3c9d31f64cd75cfe84b79",
+      "directory": "measurements/10000000-bounds-r0",
+      "stats_seconds": 0.00579139,
+      "fit_predict_seconds": 0.111191459,
+      "sweep_seconds": 7.505723414,
+      "native_estimates_seconds": {
+        "limen-cli": 156382.77477385872,
+        "sklearn": 36834.588888874896,
+        "limen-prepared": 62532.02860315218
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 20452.66830340768,
+        "sklearn": 4817.446357029844,
+        "limen-prepared": 8178.310182876129
+      },
+      "measured_gain_vs_original_rust": 3.1599797102353717,
+      "sampled_rows_per_second": 1307859.4067015233
+    },
+    {
+      "n": 10000000,
+      "level": "compact",
+      "repeat": 0,
+      "wall_seconds": 2.353932971000006,
+      "internal_seconds": 2.346259373,
+      "user_seconds": 2.31,
+      "sys_seconds": 0.03,
+      "peak_rss_kib": 75792,
+      "rows": 10000000,
+      "valid_rows": 7278517,
+      "failed_rows": 2721483,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 2902005,
+      "stable_output_match": true,
+      "stable_output_sha256": "9b146ccf38109bf6dca70fcd610fc608b65e9d7a1ee3c9d31f64cd75cfe84b79",
+      "directory": "measurements/10000000-compact-r0",
+      "stats_seconds": 0.005792221,
+      "fit_predict_seconds": 0.113238031,
+      "sweep_seconds": 2.226463949,
+      "plan_seconds": 0.675392177,
+      "mixed_score_seconds": 1.144110306,
+      "cost_reduce_seconds": 0.403759888,
+      "constant_mixed": [
+        1651526,
+        1055704,
+        194775
+      ],
+      "native_estimates_seconds": {
+        "limen-cli": 156382.77477385872,
+        "sklearn": 36834.588888874896,
+        "limen-prepared": 62532.02860315218
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 66434.6762208032,
+        "sklearn": 15648.104403426023,
+        "limen-prepared": 26564.914708079858
+      },
+      "measured_gain_vs_original_rust": 10.26429538676951,
+      "sampled_rows_per_second": 4248209.325923059
+    },
+    {
+      "n": 10000000,
+      "level": "intrinsics",
+      "repeat": 0,
+      "wall_seconds": 1.4186296290000087,
+      "internal_seconds": 1.41110734,
+      "user_seconds": 1.39,
+      "sys_seconds": 0.02,
+      "peak_rss_kib": 75792,
+      "rows": 10000000,
+      "valid_rows": 7278517,
+      "failed_rows": 2721483,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 2902005,
+      "stable_output_match": true,
+      "stable_output_sha256": "9b146ccf38109bf6dca70fcd610fc608b65e9d7a1ee3c9d31f64cd75cfe84b79",
+      "directory": "measurements/10000000-intrinsics-r0",
+      "stats_seconds": 0.005690198,
+      "fit_predict_seconds": 0.11081706,
+      "sweep_seconds": 1.29359122,
+      "plan_seconds": 0.636669516,
+      "mixed_score_seconds": 0.254711754,
+      "cost_reduce_seconds": 0.399422077,
+      "constant_mixed": [
+        1651526,
+        1055704,
+        194775
+      ],
+      "native_estimates_seconds": {
+        "limen-cli": 156382.77477385872,
+        "sklearn": 36834.588888874896,
+        "limen-prepared": 62532.02860315218
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 110235.09700984665,
+        "sklearn": 25964.90876539748,
+        "limen-prepared": 44079.17847255945
+      },
+      "measured_gain_vs_original_rust": 17.031551323252295,
+      "sampled_rows_per_second": 7049056.212824904
+    },
+    {
+      "n": 10000000,
+      "level": "assembly",
+      "repeat": 0,
+      "wall_seconds": 1.4032220440000174,
+      "internal_seconds": 1.3971134,
+      "user_seconds": 1.37,
+      "sys_seconds": 0.02,
+      "peak_rss_kib": 75792,
+      "rows": 10000000,
+      "valid_rows": 7278517,
+      "failed_rows": 2721483,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 2902005,
+      "stable_output_match": true,
+      "stable_output_sha256": "9b146ccf38109bf6dca70fcd610fc608b65e9d7a1ee3c9d31f64cd75cfe84b79",
+      "directory": "measurements/10000000-assembly-r0",
+      "stats_seconds": 0.006226436,
+      "fit_predict_seconds": 0.111744238,
+      "sweep_seconds": 1.278410972,
+      "plan_seconds": 0.636333201,
+      "mixed_score_seconds": 0.235604421,
+      "cost_reduce_seconds": 0.404897751,
+      "constant_mixed": [
+        1651526,
+        1055704,
+        194775
+      ],
+      "native_estimates_seconds": {
+        "limen-cli": 156382.77477385872,
+        "sklearn": 36834.588888874896,
+        "limen-prepared": 62532.02860315218
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 111445.49463324764,
+        "sklearn": 26250.007293125476,
+        "limen-prepared": 44563.1743532896
+      },
+      "measured_gain_vs_original_rust": 17.218560268712334,
+      "sampled_rows_per_second": 7126455.889685179
+    },
+    {
+      "n": 100000000,
+      "level": "original",
+      "repeat": 0,
+      "wall_seconds": 60.676058660000024,
+      "internal_seconds": 60.668106633,
+      "user_seconds": 58.32,
+      "sys_seconds": 2.27,
+      "peak_rss_kib": 961552,
+      "rows": 100000000,
+      "valid_rows": 72783536,
+      "failed_rows": 27216464,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 3364062,
+      "stable_output_match": true,
+      "stable_output_sha256": "674ce0b7de1555a639a07de6e91102cac530f63121ff3580f4de2476f0afe97f",
+      "directory": "measurements/100000000-original-r0",
+      "native_estimates_seconds": {
+        "limen-cli": 1563815.0619860492,
+        "sklearn": 368344.7252225806,
+        "limen-prepared": 625319.2016025917
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 25773.181325915222,
+        "sklearn": 6070.676529710186,
+        "limen-prepared": 10305.86388457736
+      },
+      "measured_gain_vs_original_rust": 1.0,
+      "sampled_rows_per_second": 1648096.5014611904
+    },
+    {
+      "n": 100000000,
+      "level": "bounds",
+      "repeat": 0,
+      "wall_seconds": 38.52503486500001,
+      "internal_seconds": 38.517075877,
+      "user_seconds": 36.38,
+      "sys_seconds": 2.05,
+      "peak_rss_kib": 961796,
+      "rows": 100000000,
+      "valid_rows": 72783536,
+      "failed_rows": 27216464,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 3364062,
+      "stable_output_match": true,
+      "stable_output_sha256": "674ce0b7de1555a639a07de6e91102cac530f63121ff3580f4de2476f0afe97f",
+      "directory": "measurements/100000000-bounds-r0",
+      "stats_seconds": 0.005710799,
+      "fit_predict_seconds": 0.113248505,
+      "sweep_seconds": 38.381829651,
+      "native_estimates_seconds": {
+        "limen-cli": 1563815.0619860492,
+        "sklearn": 368344.7252225806,
+        "limen-prepared": 625319.2016025917
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 40592.1777219928,
+        "sklearn": 9561.178244571083,
+        "limen-prepared": 16231.502548767168
+      },
+      "measured_gain_vs_original_rust": 1.5749773847738737,
+      "sampled_rows_per_second": 2595714.7177263163
+    },
+    {
+      "n": 100000000,
+      "level": "compact",
+      "repeat": 0,
+      "wall_seconds": 12.046392609999998,
+      "internal_seconds": 12.037729932,
+      "user_seconds": 11.97,
+      "sys_seconds": 0.03,
+      "peak_rss_kib": 79604,
+      "rows": 100000000,
+      "valid_rows": 72783536,
+      "failed_rows": 27216464,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 3364062,
+      "stable_output_match": true,
+      "stable_output_sha256": "674ce0b7de1555a639a07de6e91102cac530f63121ff3580f4de2476f0afe97f",
+      "directory": "measurements/100000000-compact-r0",
+      "stats_seconds": 0.00606962,
+      "fit_predict_seconds": 0.112090988,
+      "sweep_seconds": 11.918351078,
+      "plan_seconds": 5.997093317,
+      "mixed_score_seconds": 1.361114242,
+      "cost_reduce_seconds": 4.554854061,
+      "constant_mixed": [
+        1876590,
+        1263294,
+        224178
+      ],
+      "native_estimates_seconds": {
+        "limen-cli": 1563815.0619860492,
+        "sklearn": 368344.7252225806,
+        "limen-prepared": 625319.2016025917
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 129816.04639781447,
+        "sklearn": 30577.18083310757,
+        "limen-prepared": 51909.24966894233
+      },
+      "measured_gain_vs_original_rust": 5.036865443820201,
+      "sampled_rows_per_second": 8301240.316290839
+    },
+    {
+      "n": 100000000,
+      "level": "intrinsics",
+      "repeat": 0,
+      "wall_seconds": 10.690219307000007,
+      "internal_seconds": 10.683646248,
+      "user_seconds": 10.65,
+      "sys_seconds": 0.03,
+      "peak_rss_kib": 79600,
+      "rows": 100000000,
+      "valid_rows": 72783536,
+      "failed_rows": 27216464,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 3364062,
+      "stable_output_match": true,
+      "stable_output_sha256": "674ce0b7de1555a639a07de6e91102cac530f63121ff3580f4de2476f0afe97f",
+      "directory": "measurements/100000000-intrinsics-r0",
+      "stats_seconds": 0.005805871,
+      "fit_predict_seconds": 0.116921812,
+      "sweep_seconds": 10.560156806,
+      "plan_seconds": 5.804390775,
+      "mixed_score_seconds": 0.370606248,
+      "cost_reduce_seconds": 4.383054043,
+      "constant_mixed": [
+        1876590,
+        1263294,
+        224178
+      ],
+      "native_estimates_seconds": {
+        "limen-cli": 1563815.0619860492,
+        "sklearn": 368344.7252225806,
+        "limen-prepared": 625319.2016025917
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 146284.65675742083,
+        "sklearn": 34456.23655086166,
+        "limen-prepared": 58494.51574797251
+      },
+      "measured_gain_vs_original_rust": 5.675847886513334,
+      "sampled_rows_per_second": 9354345.044588517
+    },
+    {
+      "n": 100000000,
+      "level": "assembly",
+      "repeat": 0,
+      "wall_seconds": 10.771434460000023,
+      "internal_seconds": 10.762042672,
+      "user_seconds": 10.69,
+      "sys_seconds": 0.06,
+      "peak_rss_kib": 79636,
+      "rows": 100000000,
+      "valid_rows": 72783536,
+      "failed_rows": 27216464,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 3364062,
+      "stable_output_match": true,
+      "stable_output_sha256": "674ce0b7de1555a639a07de6e91102cac530f63121ff3580f4de2476f0afe97f",
+      "directory": "measurements/100000000-assembly-r0",
+      "stats_seconds": 0.006045954,
+      "fit_predict_seconds": 0.114997513,
+      "sweep_seconds": 10.639592714,
+      "plan_seconds": 5.883025072,
+      "mixed_score_seconds": 0.344421883,
+      "cost_reduce_seconds": 4.408032406,
+      "constant_mixed": [
+        1876590,
+        1263294,
+        224178
+      ],
+      "native_estimates_seconds": {
+        "limen-cli": 1563815.0619860492,
+        "sklearn": 368344.7252225806,
+        "limen-prepared": 625319.2016025917
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 145181.6903118441,
+        "sklearn": 34196.44120664128,
+        "limen-prepared": 58053.47504315506
+      },
+      "measured_gain_vs_original_rust": 5.633052764264779,
+      "sampled_rows_per_second": 9283814.55333107
+    },
+    {
+      "n": 1000000000,
+      "level": "original",
+      "repeat": 0,
+      "wall_seconds": 396.034368329,
+      "internal_seconds": 396.028410224,
+      "user_seconds": 393.75,
+      "sys_seconds": 2.19,
+      "peak_rss_kib": 961648,
+      "rows": 1000000000,
+      "valid_rows": 727869685,
+      "failed_rows": 272130315,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 3364062,
+      "stable_output_match": true,
+      "stable_output_sha256": "f901e386c12365fa14f9dd2e3029e13e6b51602237971d50ada601065c2612a6",
+      "directory": "measurements/1000000000-original-r0",
+      "native_estimates_seconds": {
+        "limen-cli": 15638137.934107954,
+        "sklearn": 3683446.0885596373,
+        "limen-prepared": 6253190.931596986
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 39486.82029817369,
+        "sklearn": 9300.824330224961,
+        "limen-prepared": 15789.51583919665
+      },
+      "measured_gain_vs_original_rust": 1.0,
+      "sampled_rows_per_second": 2525033.380863713
+    },
+    {
+      "n": 1000000000,
+      "level": "bounds",
+      "repeat": 0,
+      "wall_seconds": 358.84424609300004,
+      "internal_seconds": 358.836856573,
+      "user_seconds": 357.15,
+      "sys_seconds": 1.58,
+      "peak_rss_kib": 961832,
+      "rows": 1000000000,
+      "valid_rows": 727869685,
+      "failed_rows": 272130315,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 3364062,
+      "stable_output_match": true,
+      "stable_output_sha256": "f901e386c12365fa14f9dd2e3029e13e6b51602237971d50ada601065c2612a6",
+      "directory": "measurements/1000000000-bounds-r0",
+      "stats_seconds": 0.006183121,
+      "fit_predict_seconds": 0.117588446,
+      "sweep_seconds": 358.694368341,
+      "native_estimates_seconds": {
+        "limen-cli": 15638137.934107954,
+        "sklearn": 3683446.0885596373,
+        "limen-prepared": 6253190.931596986
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 43579.179837413605,
+        "sklearn": 10264.74892286559,
+        "limen-prepared": 17425.91946138207
+      },
+      "measured_gain_vs_original_rust": 1.103638619375721,
+      "sampled_rows_per_second": 2786724.3543340378
+    },
+    {
+      "n": 1000000000,
+      "level": "compact",
+      "repeat": 0,
+      "wall_seconds": 105.12126994000005,
+      "internal_seconds": 105.114792861,
+      "user_seconds": 105.05,
+      "sys_seconds": 0.02,
+      "peak_rss_kib": 79672,
+      "rows": 1000000000,
+      "valid_rows": 727869685,
+      "failed_rows": 272130315,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 3364062,
+      "stable_output_match": true,
+      "stable_output_sha256": "f901e386c12365fa14f9dd2e3029e13e6b51602237971d50ada601065c2612a6",
+      "directory": "measurements/1000000000-compact-r0",
+      "stats_seconds": 0.005969789,
+      "fit_predict_seconds": 0.115236875,
+      "sweep_seconds": 104.992683636,
+      "plan_seconds": 58.487709591,
+      "mixed_score_seconds": 1.349630174,
+      "cost_reduce_seconds": 45.152284963,
+      "constant_mixed": [
+        1876590,
+        1263294,
+        224178
+      ],
+      "native_estimates_seconds": {
+        "limen-cli": 15638137.934107954,
+        "sklearn": 3683446.0885596373,
+        "limen-prepared": 6253190.931596986
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 148762.8330882391,
+        "sklearn": 35039.969462526795,
+        "limen-prepared": 59485.49646675799
+      },
+      "measured_gain_vs_original_rust": 3.767404717951411,
+      "sampled_rows_per_second": 9512822.672050755
+    },
+    {
+      "n": 1000000000,
+      "level": "intrinsics",
+      "repeat": 0,
+      "wall_seconds": 98.87449782399995,
+      "internal_seconds": 98.868125417,
+      "user_seconds": 98.84,
+      "sys_seconds": 0.02,
+      "peak_rss_kib": 79604,
+      "rows": 1000000000,
+      "valid_rows": 727869685,
+      "failed_rows": 272130315,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 3364062,
+      "stable_output_match": true,
+      "stable_output_sha256": "f901e386c12365fa14f9dd2e3029e13e6b51602237971d50ada601065c2612a6",
+      "directory": "measurements/1000000000-intrinsics-r0",
+      "stats_seconds": 0.005731581,
+      "fit_predict_seconds": 0.115575371,
+      "sweep_seconds": 98.746047484,
+      "plan_seconds": 54.252665902,
+      "mixed_score_seconds": 0.362057715,
+      "cost_reduce_seconds": 44.128540235,
+      "constant_mixed": [
+        1876590,
+        1263294,
+        224178
+      ],
+      "native_estimates_seconds": {
+        "limen-cli": 15638137.934107954,
+        "sklearn": 3683446.0885596373,
+        "limen-prepared": 6253190.931596986
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 158161.4903566376,
+        "sklearn": 37253.75268268163,
+        "limen-prepared": 63243.71874664672
+      },
+      "measured_gain_vs_original_rust": 4.00542482687452,
+      "sampled_rows_per_second": 10113831.39239842
+    },
+    {
+      "n": 1000000000,
+      "level": "assembly",
+      "repeat": 0,
+      "wall_seconds": 98.28687891499993,
+      "internal_seconds": 98.280712774,
+      "user_seconds": 98.23,
+      "sys_seconds": 0.03,
+      "peak_rss_kib": 79672,
+      "rows": 1000000000,
+      "valid_rows": 727869685,
+      "failed_rows": 272130315,
+      "unique_train_configs": 2304,
+      "failed_train_configs": 627,
+      "score_cache_entries": 3364062,
+      "stable_output_match": true,
+      "stable_output_sha256": "f901e386c12365fa14f9dd2e3029e13e6b51602237971d50ada601065c2612a6",
+      "directory": "measurements/1000000000-assembly-r0",
+      "stats_seconds": 0.005786202,
+      "fit_predict_seconds": 0.114293751,
+      "sweep_seconds": 98.159876912,
+      "plan_seconds": 53.804767626,
+      "mixed_score_seconds": 0.336201078,
+      "cost_reduce_seconds": 44.015944356,
+      "constant_mixed": [
+        1876590,
+        1263294,
+        224178
+      ],
+      "native_estimates_seconds": {
+        "limen-cli": 15638137.934107954,
+        "sklearn": 3683446.0885596373,
+        "limen-prepared": 6253190.931596986
+      },
+      "multipliers_vs_projected_native": {
+        "limen-cli": 159107.0762113839,
+        "sklearn": 37476.47833791874,
+        "limen-prepared": 63621.82827073841
+      },
+      "measured_gain_vs_original_rust": 4.029371699466588,
+      "sampled_rows_per_second": 10174298.045060685
+    }
+  ],
+  "rust_provenance": {
+    "timestamp_utc": "2026-09-23T10:31:09Z",
+    "cpu_affinity": 0,
+    "sizes": [
+      100000,
+      1000000,
+      10000000,
+      100000000,
+      1000000000
+    ],
+    "levels": [
+      "original",
+      "bounds",
+      "compact",
+      "intrinsics",
+      "assembly"
+    ],
+    "cold_process_each_run": true,
+    "cache_reuse_between_processes": false,
+    "cpuinfo": "processor\t: 0\nvendor_id\t: AuthenticAMD\ncpu family\t: 25\nmodel\t\t: 17\nmodel name\t: AMD EPYC 9V74 80-Core Processor\nstepping\t: 1\nmicrocode\t: 0x1000065\ncpu MHz\t\t: 2596.146\ncache size\t: 1024 KB\nphysical id\t: 0\nsiblings\t: 5\ncore id\t\t: 0\ncpu cores\t: 5\napicid\t\t: 0\ninitial apicid\t: 0\nfpu\t\t: yes\nfpu_exception\t: yes\ncpuid level\t: 28\nwp\t\t: yes\nflags\t\t: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid extd_apicid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves avx512_bf16 clzero xsaveerptr arat npt nrip_save tsc_scale vmcb_clean flushbyasid pausefilter pfthreshold v_vmsave_vmload avx512vbmi umip avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid fsrm arch_capabilities\nbugs\t\t: sysret_ss_attrs null_seg spectre_v1 spectre_v2 spec_store_bypass srso spectre_v2_user tsa\nbogomips\t: 5192.29\nTLB size\t: 3584 4K pages\nclflush size\t: 64\ncache_alignment\t: 64\naddress sizes\t: 46 bits physical, 48 bits virtual\npower management:\n\nprocessor\t: 1\nvendor_id\t: AuthenticAMD\ncpu family\t: 25\nmodel\t\t: 17\nmodel name\t: AMD EPYC 9V74 80-Core Processor\nstepping\t: 1\nmicrocode\t: 0x1000065\ncpu MHz\t\t: 2596.146\ncache size\t: 1024 KB\nphysical id\t: 0\nsiblings\t: 5\ncore id\t\t: 1\ncpu cores\t: 5\napicid\t\t: 1\ninitial apicid\t: 1\nfpu\t\t: yes\nfpu_exception\t: yes\ncpuid level\t: 28\nwp\t\t: yes\nflags\t\t: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid extd_apicid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves avx512_bf16 clzero xsaveerptr arat npt nrip_save tsc_scale vmcb_clean flushbyasid pausefilter pfthreshold v_vmsave_vmload avx512vbmi umip avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid fsrm arch_capabilities\nbugs\t\t: sysret_ss_attrs null_seg spectre_v1 spectre_v2 spec_store_bypass srso spectre_v2_user tsa\nbogomips\t: 5192.29\nTLB size\t: 3584 4K pages\nclflush size\t: 64\ncache_alignment\t: 64\naddress sizes\t: 46 bits physical, 48 bits virtual\npower management:\n\nprocessor\t: 2\nvendor_id\t: AuthenticAMD\ncpu family\t: 25\nmodel\t\t: 17\nmodel name\t: AMD EPYC 9V74 80-Core Processor\nstepping\t: 1\nmicrocode\t: 0x1000065\ncpu MHz\t\t: 2596.146\ncache size\t: 1024 KB\nphysical id\t: 0\nsiblings\t: 5\ncore id\t\t: 2\ncpu cores\t: 5\napicid\t\t: 2\ninitial apicid\t: 2\nfpu\t\t: yes\nfpu_exception\t: yes\ncpuid level\t: 28\nwp\t\t: yes\nflags\t\t: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid extd_apicid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves avx512_bf16 clzero xsaveerptr arat npt nrip_save tsc_scale vmcb_clean flushbyasid pausefilter pfthreshold v_vmsave_vmload avx512vbmi umip avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid fsrm arch_capabilities\nbugs\t\t: sysret_ss_attrs null_seg spectre_v1 spectre_v2 spec_store_bypass srso spectre_v2_user tsa\nbogomips\t: 5192.29\nTLB size\t: 3584 4K pages\nclflush size\t: 64\ncache_alignment\t: 64\naddress sizes\t: 46 bits physical, 48 bits virtual\npower management:\n\nprocessor\t: 3\nvendor_id\t: AuthenticAMD\ncpu family\t: 25\nmodel\t\t: 17\nmodel name\t: AMD EPYC 9V74 80-Core Processor\nstepping\t: 1\nmicrocode\t: 0x1000065\ncpu MHz\t\t: 2596.146\ncache size\t: 1024 KB\nphysical id\t: 0\nsiblings\t: 5\ncore id\t\t: 3\ncpu cores\t: 5\napicid\t\t: 3\ninitial apicid\t: 3\nfpu\t\t: yes\nfpu_exception\t: yes\ncpuid level\t: 28\nwp\t\t: yes\nflags\t\t: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid extd_apicid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves avx512_bf16 clzero xsaveerptr arat npt nrip_save tsc_scale vmcb_clean flushbyasid pausefilter pfthreshold v_vmsave_vmload avx512vbmi umip avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid fsrm arch_capabilities\nbugs\t\t: sysret_ss_attrs null_seg spectre_v1 spectre_v2 spec_store_bypass srso spectre_v2_user tsa\nbogomips\t: 5192.29\nTLB size\t: 3584 4K pages\nclflush size\t: 64\ncache_alignment\t: 64\naddress sizes\t: 46 bits physical, 48 bits virtual\npower management:\n\nprocessor\t: 4\nvendor_id\t: AuthenticAMD\ncpu family\t: 25\nmodel\t\t: 17\nmodel name\t: AMD EPYC 9V74 80-Core Processor\nstepping\t: 1\nmicrocode\t: 0x1000065\ncpu MHz\t\t: 2596.146\ncache size\t: 1024 KB\nphysical id\t: 0\nsiblings\t: 5\ncore id\t\t: 4\ncpu cores\t: 5\napicid\t\t: 4\ninitial apicid\t: 4\nfpu\t\t: yes\nfpu_exception\t: yes\ncpuid level\t: 28\nwp\t\t: yes\nflags\t\t: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid extd_apicid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves avx512_bf16 clzero xsaveerptr arat npt nrip_save tsc_scale vmcb_clean flushbyasid pausefilter pfthreshold v_vmsave_vmload avx512vbmi umip avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid fsrm arch_capabilities\nbugs\t\t: sysret_ss_attrs null_seg spectre_v1 spectre_v2 spec_store_bypass srso spectre_v2_user tsa\nbogomips\t: 5192.29\nTLB size\t: 3584 4K pages\nclflush size\t: 64\ncache_alignment\t: 64\naddress sizes\t: 46 bits physical, 48 bits virtual\npower management:\n\n",
+    "cpu_max": "400000 100000\n",
+    "memory_max": "4294967296\n",
+    "rustc": "rustc 1.89.0 (29483883e 2025-08-04)\nbinary: rustc\ncommit-hash: 29483883eed69d5fb4db01964cdf2af4d86e9cb2\ncommit-date: 2025-08-04\nhost: x86_64-unknown-linux-gnu\nrelease: 1.89.0\nLLVM version: 20.1.7\n",
+    "flags": "--edition=2021 -O -C panic=abort -C target-cpu=native -C lto=fat -C codegen-units=1",
+    "sha256": {
+      "bin/original": "8730ba2bf1442f32e3e59bdefe4926556b5abd7921395802a8269d2008a911c7",
+      "bin/funnel": "9f2d49d45718ad96572152d7f164be17e8248966982381f6505e9072424c7061",
+      "terasweep-integrated/Terasweep/data/train.bin": "69de0edb379fc2fdc3b8e16585744ed79ed1812932bf66d46f9aa2888abfe3a9",
+      "terasweep-integrated/Terasweep/data/test.bin": "c541ad6009c07202db0089004b9dfb3603eb7bbadeb8c74e7290d7bca6c66531",
+      "terasweep-integrated/Terasweep/data/price.bin": "8168e7300541a0a9ba9a2735ad81324f83f780f9d5d09aa2a243ad3ec1edfbc0",
+      "terasweep-integrated/Terasweep/configs/sweep.json": "92110fd3cb3bfc40ebd1ab4c6d8e221c74420d54397e02896f86959600474cf4"
+    }
+  },
+  "native_provenance": {
+    "python": "3.13.5 (main, Jun 25 2025, 18:55:22) [GCC 14.2.0]",
+    "packages": {
+      "vaquum-limen": "5.11.0",
+      "numpy": "2.3.5",
+      "scipy": "1.17.0",
+      "scikit-learn": "1.8.0",
+      "polars": "1.42.1",
+      "pandas": "2.3.3",
+      "pyarrow": "23.0.1"
+    },
+    "models": {
+      "limen-cli": {
+        "seconds_per_row": 0.015638136524579894,
+        "startup_seconds": 1.4095280597816555,
+        "formula": "startup_seconds + seconds_per_row * N",
+        "calibration_n": [
+          128,
+          512,
+          1014
+        ],
+        "time_boundary": "complete process",
+        "projection_only": true,
+        "all_measurements": [
+          {
+            "mode": "limen-cli",
+            "n": 128,
+            "repeat": 0,
+            "wall_seconds": 3.29396590500005,
+            "directory": "native-calibration/limen-cli-128-r0",
+            "sum_logged_round_seconds": 1.78,
+            "warning_rounds": 128,
+            "input_contract": "Full native Limen CLI, retained 13-feature raw-data workload used in preceding comparison"
+          },
+          {
+            "mode": "limen-cli",
+            "n": 512,
+            "repeat": 0,
+            "wall_seconds": 9.097616943000048,
+            "directory": "native-calibration/limen-cli-512-r0",
+            "sum_logged_round_seconds": 6.12,
+            "warning_rounds": 512,
+            "input_contract": "Full native Limen CLI, retained 13-feature raw-data workload used in preceding comparison"
+          },
+          {
+            "mode": "limen-cli",
+            "n": 1014,
+            "repeat": 0,
+            "wall_seconds": 17.322238137999875,
+            "directory": "native-calibration/limen-cli-1014-r0",
+            "sum_logged_round_seconds": 13.11,
+            "warning_rounds": 1014,
+            "input_contract": "Full native Limen CLI, retained 13-feature raw-data workload used in preceding comparison"
+          },
+          {
+            "mode": "limen-cli",
+            "n": 128,
+            "repeat": 1,
+            "wall_seconds": 3.448535550000088,
+            "directory": "native-calibration/limen-cli-128-r1",
+            "sum_logged_round_seconds": 1.8900000000000001,
+            "warning_rounds": 128,
+            "input_contract": "Full native Limen CLI, retained 13-feature raw-data workload used in preceding comparison"
+          },
+          {
+            "mode": "limen-cli",
+            "n": 512,
+            "repeat": 1,
+            "wall_seconds": 9.875940792000165,
+            "directory": "native-calibration/limen-cli-512-r1",
+            "sum_logged_round_seconds": 8.19,
+            "warning_rounds": 512,
+            "input_contract": "Full native Limen CLI, retained 13-feature raw-data workload used in preceding comparison"
+          },
+          {
+            "mode": "limen-cli",
+            "n": 1014,
+            "repeat": 1,
+            "wall_seconds": 17.14982665399998,
+            "directory": "native-calibration/limen-cli-1014-r1",
+            "sum_logged_round_seconds": 12.61,
+            "warning_rounds": 1014,
+            "input_contract": "Full native Limen CLI, retained 13-feature raw-data workload used in preceding comparison"
+          }
+        ]
+      },
+      "sklearn": {
+        "seconds_per_row": 0.0036834459592633966,
+        "startup_seconds": 0.12929624092850983,
+        "formula": "startup_seconds + seconds_per_row * N",
+        "calibration_n": [
+          256,
+          2048
+        ],
+        "time_boundary": "uncached native prepared-data loop",
+        "projection_only": true,
+        "all_measurements": [
+          {
+            "mode": "sklearn",
+            "n": 256,
+            "repeat": 0,
+            "wall_seconds": 2.276890832999925,
+            "directory": "native-calibration/sklearn-256-r0",
+            "compute_seconds": 1.12191027699987,
+            "mae_checksum": 28.873255229892173,
+            "warning_count": 21,
+            "fits": 256,
+            "cached_fits": false,
+            "train_shape": [
+              4136,
+              55
+            ],
+            "test_shape": [
+              1136,
+              55
+            ],
+            "first_sample": {
+              "alpha": 30964.32511816367,
+              "fit_intercept": false,
+              "fee_bps": 20.0,
+              "slippage_bps": 50.0
+            },
+            "native_signal_contract": "prediction > 0; no substitution of Terasweep economics or solver_eps"
+          },
+          {
+            "mode": "sklearn",
+            "n": 2048,
+            "repeat": 0,
+            "wall_seconds": 8.959885577000023,
+            "directory": "native-calibration/sklearn-2048-r0",
+            "compute_seconds": 7.7468117599999005,
+            "mae_checksum": 230.6581368096233,
+            "warning_count": 176,
+            "fits": 2048,
+            "cached_fits": false,
+            "train_shape": [
+              4136,
+              55
+            ],
+            "test_shape": [
+              1136,
+              55
+            ],
+            "first_sample": {
+              "alpha": 30964.32511816367,
+              "fit_intercept": false,
+              "fee_bps": 20.0,
+              "slippage_bps": 50.0
+            },
+            "native_signal_contract": "prediction > 0; no substitution of Terasweep economics or solver_eps"
+          },
+          {
+            "mode": "sklearn",
+            "n": 256,
+            "repeat": 1,
+            "wall_seconds": 2.1624226080000426,
+            "directory": "native-calibration/sklearn-256-r1",
+            "compute_seconds": 1.022606536000012,
+            "mae_checksum": 28.873255229892173,
+            "warning_count": 21,
+            "fits": 256,
+            "cached_fits": false,
+            "train_shape": [
+              4136,
+              55
+            ],
+            "test_shape": [
+              1136,
+              55
+            ],
+            "first_sample": {
+              "alpha": 30964.32511816367,
+              "fit_intercept": false,
+              "fee_bps": 20.0,
+              "slippage_bps": 50.0
+            },
+            "native_signal_contract": "prediction > 0; no substitution of Terasweep economics or solver_eps"
+          },
+          {
+            "mode": "sklearn",
+            "n": 2048,
+            "repeat": 1,
+            "wall_seconds": 8.835048968000137,
+            "directory": "native-calibration/sklearn-2048-r1",
+            "compute_seconds": 7.599175371000001,
+            "mae_checksum": 230.6581368096233,
+            "warning_count": 176,
+            "fits": 2048,
+            "cached_fits": false,
+            "train_shape": [
+              4136,
+              55
+            ],
+            "test_shape": [
+              1136,
+              55
+            ],
+            "first_sample": {
+              "alpha": 30964.32511816367,
+              "fit_intercept": false,
+              "fee_bps": 20.0,
+              "slippage_bps": 50.0
+            },
+            "native_signal_contract": "prediction > 0; no substitution of Terasweep economics or solver_eps"
+          }
+        ]
+      },
+      "limen-prepared": {
+        "seconds_per_row": 0.0062531908111048825,
+        "startup_seconds": 0.12049210335711938,
+        "formula": "startup_seconds + seconds_per_row * N",
+        "calibration_n": [
+          256,
+          2048
+        ],
+        "time_boundary": "uncached native prepared-data loop",
+        "projection_only": true,
+        "all_measurements": [
+          {
+            "mode": "limen-prepared",
+            "n": 256,
+            "repeat": 0,
+            "wall_seconds": 3.0718159530001685,
+            "directory": "native-calibration/limen-prepared-256-r0",
+            "compute_seconds": 1.7709843229999933,
+            "mae_checksum": 28.876000000000037,
+            "warning_count": 21,
+            "fits": 256,
+            "cached_fits": false,
+            "train_shape": [
+              4136,
+              55
+            ],
+            "test_shape": [
+              1136,
+              55
+            ],
+            "first_sample": {
+              "alpha": 30964.32511816367,
+              "fit_intercept": false,
+              "fee_bps": 20.0,
+              "slippage_bps": 50.0
+            },
+            "native_signal_contract": "prediction > 0; no substitution of Terasweep economics or solver_eps"
+          },
+          {
+            "mode": "limen-prepared",
+            "n": 2048,
+            "repeat": 0,
+            "wall_seconds": 13.613501461999931,
+            "directory": "native-calibration/limen-prepared-2048-r0",
+            "compute_seconds": 12.338360652999881,
+            "mae_checksum": 230.67299999999852,
+            "warning_count": 176,
+            "fits": 2048,
+            "cached_fits": false,
+            "train_shape": [
+              4136,
+              55
+            ],
+            "test_shape": [
+              1136,
+              55
+            ],
+            "first_sample": {
+              "alpha": 30964.32511816367,
+              "fit_intercept": false,
+              "fee_bps": 20.0,
+              "slippage_bps": 50.0
+            },
+            "native_signal_contract": "prediction > 0; no substitution of Terasweep economics or solver_eps"
+          },
+          {
+            "mode": "limen-prepared",
+            "n": 256,
+            "repeat": 1,
+            "wall_seconds": 2.824592095000071,
+            "directory": "native-calibration/limen-prepared-256-r1",
+            "compute_seconds": 1.6716335789999448,
+            "mae_checksum": 28.876000000000037,
+            "warning_count": 21,
+            "fits": 256,
+            "cached_fits": false,
+            "train_shape": [
+              4136,
+              55
+            ],
+            "test_shape": [
+              1136,
+              55
+            ],
+            "first_sample": {
+              "alpha": 30964.32511816367,
+              "fit_intercept": false,
+              "fee_bps": 20.0,
+              "slippage_bps": 50.0
+            },
+            "native_signal_contract": "prediction > 0; no substitution of Terasweep economics or solver_eps"
+          },
+          {
+            "mode": "limen-prepared",
+            "n": 2048,
+            "repeat": 1,
+            "wall_seconds": 14.71313750299987,
+            "directory": "native-calibration/limen-prepared-2048-r1",
+            "compute_seconds": 13.515693115999966,
+            "mae_checksum": 230.67299999999852,
+            "warning_count": 176,
+            "fits": 2048,
+            "cached_fits": false,
+            "train_shape": [
+              4136,
+              55
+            ],
+            "test_shape": [
+              1136,
+              55
+            ],
+            "first_sample": {
+              "alpha": 30964.32511816367,
+              "fit_intercept": false,
+              "fee_bps": 20.0,
+              "slippage_bps": 50.0
+            },
+            "native_signal_contract": "prediction > 0; no substitution of Terasweep economics or solver_eps"
+          }
+        ]
+      }
+    }
+  }
+}

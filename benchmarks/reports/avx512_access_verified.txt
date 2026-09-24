@@ -1,0 +1,37 @@
+SESSION HARDWARE
+Architecture:                            x86_64
+CPU(s):                                  5
+Model name:                              AMD EPYC 9V74 80-Core Processor
+Hypervisor vendor:                       KVM
+Virtualization type:                     full
+NUMA node0 CPU(s):                       0-4
+
+CPU quota (quota period): 400000 100000
+Memory limit (bytes): 4294967296
+
+RUNTIME INSTRUCTION TEST
+XCR0: 0xe7
+Executed 512-bit FP64 add; result: 3 6 9 12 15 18 21 24
+PASS: all eight lanes match scalar results
+
+COMPILED FUNCTION
+
+/mnt/data/avx512_probe:     file format elf64-x86-64
+
+
+Disassembly of section .init:
+
+Disassembly of section .plt:
+
+Disassembly of section .plt.got:
+
+Disassembly of section .text:
+
+00000000000026c0 <add_eight_doubles>:
+    26c0:	62 f1 fd 48 10 06    	vmovupd zmm0,ZMMWORD PTR [rsi]
+    26c6:	62 f1 fd 48 58 07    	vaddpd zmm0,zmm0,ZMMWORD PTR [rdi]
+    26cc:	62 f1 fd 48 11 02    	vmovupd ZMMWORD PTR [rdx],zmm0
+    26d2:	c5 f8 77             	vzeroupper
+    26d5:	c3                   	ret
+
+Disassembly of section .fini:

@@ -1,0 +1,241 @@
+{
+  "scope": "C scoring-kernel experiment, not Rust end-to-end benchmark",
+  "timing_boundary": {
+    "included": [
+      "batch construction inside score_jobs",
+      "threshold packing and rule masks",
+      "chronologically ordered base scoring",
+      "writing complete BaseScore outputs"
+    ],
+    "excluded": [
+      "input reads",
+      "training-statistics computation",
+      "ridge fitting and predictions",
+      "one-million-row sampling",
+      "bounds classification",
+      "deduplication and sorting",
+      "fee/slippage application",
+      "winner selection",
+      "JSON/CSV artifact serialization"
+    ]
+  },
+  "events": [
+    {
+      "event": "environment",
+      "cpu": 0,
+      "avx2": true,
+      "avx512f": true,
+      "compiler": "14.2.0"
+    },
+    {
+      "event": "preparation",
+      "seconds": 0.112144143,
+      "train_rows": 4136,
+      "features": 55,
+      "test_rows": 1136,
+      "failed_models": 627
+    },
+    {
+      "event": "jobs",
+      "failed_rows": 271898,
+      "unique": 648130,
+      "off": 394015,
+      "on": 209555,
+      "mixed": 44560,
+      "lane_utilization_avx2": 0.739167938,
+      "lane_utilization_avx512": 0.526963103
+    },
+    {
+      "event": "flexible_batches",
+      "lane_utilization_avx2": 0.945109018,
+      "lane_utilization_avx512": 0.882725832
+    },
+    {
+      "event": "reference_first_pass",
+      "seconds": 0.229141598,
+      "fingerprint": "b4bba056c98c06c0"
+    },
+    {
+      "event": "bitwise_validation",
+      "mode": 1,
+      "jobs": 44560,
+      "pass": true
+    },
+    {
+      "event": "bitwise_validation",
+      "mode": 2,
+      "jobs": 44560,
+      "pass": true
+    },
+    {
+      "event": "bitwise_validation",
+      "mode": 3,
+      "jobs": 44560,
+      "pass": true
+    },
+    {
+      "event": "bitwise_validation",
+      "mode": 4,
+      "jobs": 44560,
+      "pass": true
+    },
+    {
+      "event": "bitwise_validation",
+      "mode": 5,
+      "jobs": 44560,
+      "pass": true
+    },
+    {
+      "event": "boundary_validation",
+      "jobs_per_simd_mode": 19440,
+      "pass": true
+    },
+    {
+      "event": "done",
+      "checksum": "0000000000000000"
+    }
+  ],
+  "modes": [
+    {
+      "mode": 0,
+      "name": "C reference scorer",
+      "repeats": 12,
+      "median_seconds": 0.23956498599999998,
+      "minimum_seconds": 0.21941193,
+      "maximum_seconds": 0.255650066,
+      "samples_seconds": [
+        0.21941193,
+        0.228284607,
+        0.24061626,
+        0.247328908,
+        0.225928269,
+        0.222393663,
+        0.23493116,
+        0.247840719,
+        0.244149183,
+        0.246715289,
+        0.255650066,
+        0.238513712
+      ],
+      "speedup_vs_c_reference": 1.0
+    },
+    {
+      "mode": 1,
+      "name": "Specialized scalar C",
+      "repeats": 12,
+      "median_seconds": 0.204712439,
+      "minimum_seconds": 0.190289834,
+      "maximum_seconds": 0.222675694,
+      "samples_seconds": [
+        0.190289834,
+        0.192602408,
+        0.217211845,
+        0.2009403,
+        0.194975338,
+        0.194295223,
+        0.222675694,
+        0.205903365,
+        0.205411725,
+        0.217941248,
+        0.208685813,
+        0.204013153
+      ],
+      "speedup_vs_c_reference": 1.170251242036152
+    },
+    {
+      "mode": 2,
+      "name": "AVX2 / one model and rule per batch",
+      "repeats": 12,
+      "median_seconds": 0.0835915545,
+      "minimum_seconds": 0.07805045,
+      "maximum_seconds": 0.091491885,
+      "samples_seconds": [
+        0.078088676,
+        0.08400508,
+        0.078931576,
+        0.080106846,
+        0.07878807,
+        0.07805045,
+        0.086512791,
+        0.08492581,
+        0.086762053,
+        0.085279865,
+        0.083178029,
+        0.091491885
+      ],
+      "speedup_vs_c_reference": 2.865899401356389
+    },
+    {
+      "mode": 3,
+      "name": "AVX-512 / one model and rule per batch",
+      "repeats": 12,
+      "median_seconds": 0.083368463,
+      "minimum_seconds": 0.078254488,
+      "maximum_seconds": 0.089490379,
+      "samples_seconds": [
+        0.080396453,
+        0.079063714,
+        0.080469092,
+        0.084937323,
+        0.086612693,
+        0.078254488,
+        0.082054043,
+        0.084682883,
+        0.089490379,
+        0.081914806,
+        0.087395843,
+        0.087581568
+      ],
+      "speedup_vs_c_reference": 2.873568461973444
+    },
+    {
+      "mode": 4,
+      "name": "AVX2 / one model, mixed rules per batch",
+      "repeats": 12,
+      "median_seconds": 0.0782819055,
+      "minimum_seconds": 0.073824672,
+      "maximum_seconds": 0.09489355,
+      "samples_seconds": [
+        0.076835819,
+        0.075039492,
+        0.076907887,
+        0.084972287,
+        0.073824672,
+        0.07515053,
+        0.078191482,
+        0.078995404,
+        0.09489355,
+        0.082615702,
+        0.078372329,
+        0.079798558
+      ],
+      "speedup_vs_c_reference": 3.060285572634662
+    },
+    {
+      "mode": 5,
+      "name": "AVX-512 / one model, mixed rules per batch",
+      "repeats": 12,
+      "median_seconds": 0.060285111,
+      "minimum_seconds": 0.056838311,
+      "maximum_seconds": 0.070688097,
+      "samples_seconds": [
+        0.070688097,
+        0.056838311,
+        0.058253963,
+        0.060463783,
+        0.057502317,
+        0.057284749,
+        0.058279859,
+        0.064053298,
+        0.069247111,
+        0.066257766,
+        0.064461209,
+        0.060106439
+      ],
+      "speedup_vs_c_reference": 3.973866548906246
+    }
+  ],
+  "best_avx512_vs_best_avx2": 1.2985280146535683,
+  "best_avx512_vs_specialized_scalar": 3.395737945974753,
+  "raw_log_sha256": "fa0702a535399e534d59245271907c8c05c5efff5835b8cc560ead8a00840127"
+}

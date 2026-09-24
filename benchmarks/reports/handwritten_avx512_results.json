@@ -1,0 +1,243 @@
+{
+  "scope": "Handwritten x86-64 AVX-512 scoring-kernel A/B, not end-to-end Rust or Limen",
+  "hardware": "Reported Intel Xeon Platinum 8573C, KVM x86-64; shared VM; single thread pinned to CPU 0",
+  "compilers": {
+    "driver": "GCC 14.2.0",
+    "best_tested_intrinsics": "Clang 17.0.0",
+    "assembly": "Hand-authored score8_gpr.S, assembled/linked with GCC toolchain"
+  },
+  "compiler_options": [
+    "-O3",
+    "-g",
+    "-march=x86-64-v3",
+    "-ffp-contract=off",
+    "-fno-fast-math",
+    "-Wall",
+    "-Wextra"
+  ],
+  "workload": {
+    "sampled_rows_upstream": 1000000,
+    "mixed_jobs_timed": 44560,
+    "test_bars": 1136,
+    "batch_width": 8,
+    "mixed_rules": true,
+    "lane_utilization": 0.882725832,
+    "training_configurations": 2304,
+    "failed_training_configurations": 627
+  },
+  "primary_protocol": {
+    "method": "105 chunks of at most 16 model groups each; never splits a model across chunks; pair order alternates by chunk and repetition",
+    "repetitions": 32,
+    "metric": "Sum of timed chunk durations per full job-set pass",
+    "includes": [
+      "batch grouping",
+      "packing thresholds and rule masks",
+      "indirect call to selected kernel",
+      "FP64 base scoring",
+      "unpacking and output stores"
+    ],
+    "excludes": [
+      "input loading",
+      "fit/predict preparation",
+      "sampling and deduplication",
+      "constant-signal bounds classification",
+      "initial sorting and chunk planning",
+      "correctness comparison",
+      "cost application",
+      "whole-sweep caching and reporting"
+    ]
+  },
+  "primary_results": {
+    "10": {
+      "name": "Prepared inputs, 8-bit mask intrinsics (Clang)",
+      "repetitions": 32,
+      "wall_median_seconds": 0.054547267499999996,
+      "wall_min_seconds": 0.045526833,
+      "wall_max_seconds": 0.070279813,
+      "cpu_median_seconds": 0.054590164999999996
+    },
+    "12": {
+      "name": "Handwritten GPR-mask schedule",
+      "repetitions": 32,
+      "wall_median_seconds": 0.0509971485,
+      "wall_min_seconds": 0.04426182,
+      "wall_max_seconds": 0.066761167,
+      "cpu_median_seconds": 0.051048819499999995
+    }
+  },
+  "incremental": {
+    "ratio_of_medians": 1.0696140687160185,
+    "throughput_increase_pct": 6.96140687160185,
+    "time_reduction_pct": 6.508335179209479,
+    "median_paired_speedup": 1.0636906316127726,
+    "assembly_wins": 27,
+    "pairs": 32
+  },
+  "whole_job_set_confirmations": {
+    "32_single_pass_rotations": {
+      "5": {
+        "name": "Previous AVX-512 mixed-rule intrinsics (GCC)",
+        "repetitions": 32,
+        "wall_median_seconds": 0.062477396000000004,
+        "wall_min_seconds": 0.051911506,
+        "wall_max_seconds": 0.095525129,
+        "cpu_median_seconds": 0.062194139499999995
+      },
+      "9": {
+        "name": "Prepared inputs, 8-bit mask intrinsics (GCC)",
+        "repetitions": 32,
+        "wall_median_seconds": 0.0559113155,
+        "wall_min_seconds": 0.046334872,
+        "wall_max_seconds": 0.077767086,
+        "cpu_median_seconds": 0.055847772500000004
+      },
+      "10": {
+        "name": "Prepared inputs, 8-bit mask intrinsics (Clang)",
+        "repetitions": 32,
+        "wall_median_seconds": 0.0539284755,
+        "wall_min_seconds": 0.044651094,
+        "wall_max_seconds": 0.074049872,
+        "cpu_median_seconds": 0.0533837685
+      },
+      "12": {
+        "name": "Handwritten GPR-mask schedule",
+        "repetitions": 32,
+        "wall_median_seconds": 0.050408096,
+        "wall_min_seconds": 0.041405158,
+        "wall_max_seconds": 0.067434511,
+        "cpu_median_seconds": 0.050329683
+      }
+    },
+    "24_four_pass_blocks_same_wrapper": {
+      "9": {
+        "name": "Prepared inputs, 8-bit mask intrinsics (GCC)",
+        "repetitions": 24,
+        "wall_median_seconds": 0.0651029845,
+        "wall_min_seconds": 0.049269294,
+        "wall_max_seconds": 0.164512084,
+        "cpu_median_seconds": 0.0651041325
+      },
+      "10": {
+        "name": "Prepared inputs, 8-bit mask intrinsics (Clang)",
+        "repetitions": 24,
+        "wall_median_seconds": 0.0563009305,
+        "wall_min_seconds": 0.046906373,
+        "wall_max_seconds": 0.126657101,
+        "cpu_median_seconds": 0.0563026935
+      },
+      "12": {
+        "name": "Handwritten GPR-mask schedule",
+        "repetitions": 24,
+        "wall_median_seconds": 0.052917520999999995,
+        "wall_min_seconds": 0.044668282,
+        "wall_max_seconds": 0.1497823,
+        "cpu_median_seconds": 0.052918131
+      }
+    }
+  },
+  "validation": [
+    {
+      "event": "bitwise_validation",
+      "mode": 1,
+      "jobs": 44560,
+      "pass": true
+    },
+    {
+      "event": "bitwise_validation",
+      "mode": 2,
+      "jobs": 44560,
+      "pass": true
+    },
+    {
+      "event": "bitwise_validation",
+      "mode": 3,
+      "jobs": 44560,
+      "pass": true
+    },
+    {
+      "event": "bitwise_validation",
+      "mode": 4,
+      "jobs": 44560,
+      "pass": true
+    },
+    {
+      "event": "bitwise_validation",
+      "mode": 5,
+      "jobs": 44560,
+      "pass": true
+    },
+    {
+      "event": "bitwise_validation",
+      "mode": 6,
+      "jobs": 44560,
+      "pass": true
+    },
+    {
+      "event": "bitwise_validation",
+      "mode": 7,
+      "jobs": 44560,
+      "pass": true
+    },
+    {
+      "event": "bitwise_validation",
+      "mode": 8,
+      "jobs": 44560,
+      "pass": true
+    },
+    {
+      "event": "bitwise_validation",
+      "mode": 9,
+      "jobs": 44560,
+      "pass": true
+    },
+    {
+      "event": "bitwise_validation",
+      "mode": 10,
+      "jobs": 44560,
+      "pass": true
+    },
+    {
+      "event": "bitwise_validation",
+      "mode": 11,
+      "jobs": 44560,
+      "pass": true
+    },
+    {
+      "event": "bitwise_validation",
+      "mode": 12,
+      "jobs": 44560,
+      "pass": true
+    },
+    {
+      "event": "assembly_extended_validation",
+      "threshold_boundary_jobs": 19440,
+      "prefix_gap_tail_jobs": 30240,
+      "pass": true
+    },
+    {
+      "event": "assembly_all_keys_validation",
+      "jobs": 648130,
+      "fields_each": 17,
+      "pass": true
+    }
+  ],
+  "source_sha256": {
+    "score8_gpr.S": "7114c244ff89646de1a260a8fcb8654c77f794f5f3a1aa84aeadad37ccc2bfcb",
+    "score8.S": "af9ba9a90d826eff45b9d770b34f39d596baa0ff3af464f7276a94e6c7617254",
+    "probe_final.c": "6a031d9440e899213292f0eb40e33efb91bb1af06ac33d1e742cc69eb6a588ef",
+    "common.inc": "f22a88def53e00cf58ef3fa66d10b35f3dc114df2adeb7a4d50c94e8ed6ed84c",
+    "raw_k16.c": "5ca2557bc1510ff59ebba58d8bc86a5b7ba16989919278422deaf6fe90aa5e19",
+    "raw_k8.c": "285f08a7b1f90e0f880de9275acd8fa93f2f48dc871f80d7a170fed446322c30",
+    "original_mixed.c": "8b278de40a892d1d466b23db4a04fa18ad3ac4d1a52007ca5e51366ea719e0a8",
+    "kernel_types.h": "87029c1fb4f3e7bcca1689e4f373011031aed08462775fde10b574b8cc5b6c1a",
+    "validate_extra.inc": "d6a1fc737bd2af051da399edcb6a2b889360f8a697b5fe76fd57295d26338239"
+  },
+  "caveats": [
+    "No native Rust build or whole-program integration measured",
+    "A VM hardware change means the earlier AMD timings are not this baseline",
+    "All outliers retained; shared-VM performance is variable",
+    "Strongest tested intrinsics is not a proof that all possible intrinsic implementations are exhausted",
+    "No independent attribution to each individual hand-scheduling decision",
+    "No fast-math, FMA substitution, FP32 conversion or reassociation"
+  ]
+}

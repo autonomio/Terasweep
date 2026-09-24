@@ -1,0 +1,22 @@
+{
+  "scope": "Isolated exploratory M1 Max prototypes, not AVX-512 measurements; production source and executable unchanged",
+  "output_directory": "/Users/mikkokotila/dev/_reports/terasweep-simd-20260922-u3uJGl",
+  "paired_runs": [
+    {"repeat": 1, "original_wall_seconds": 3.81, "original_user_seconds": 3.65, "original_peak_rss_bytes": 345440256, "original_instructions": 64978247765, "original_internal_seconds": 3.800429208, "bounds_wall_seconds": 0.77, "bounds_user_seconds": 0.62, "bounds_peak_rss_bytes": 345653248, "bounds_instructions": 7479177751, "bounds_internal_seconds": 0.758613583},
+    {"repeat": 2, "original_wall_seconds": 4.07, "original_user_seconds": 3.82, "original_peak_rss_bytes": 345669632, "original_instructions": 65006315309, "original_internal_seconds": 4.055279083, "bounds_wall_seconds": 0.74, "bounds_user_seconds": 0.67, "bounds_peak_rss_bytes": 345620480, "bounds_instructions": 7478019396, "bounds_internal_seconds": 0.732995791},
+    {"repeat": 3, "original_wall_seconds": 4.01, "original_user_seconds": 3.72, "original_peak_rss_bytes": 345391104, "original_instructions": 64980727442, "original_internal_seconds": 3.996192791, "bounds_wall_seconds": 0.82, "bounds_user_seconds": 0.70, "bounds_peak_rss_bytes": 346095616, "bounds_instructions": 7478546203, "bounds_internal_seconds": 0.804219958}
+  ],
+  "medians": {"original_wall_seconds": 4.01, "original_user_seconds": 3.72, "original_peak_rss_bytes": 345440256, "original_instructions": 64980727442, "original_internal_seconds": 3.996192791, "bounds_wall_seconds": 0.77, "bounds_user_seconds": 0.67, "bounds_peak_rss_bytes": 345653248, "bounds_instructions": 7478546203, "bounds_internal_seconds": 0.758613583},
+  "median_wall_speedup": 5.207792207792207,
+  "score_misses": {"all_off": 394015, "all_on": 209555, "mixed": 44560, "total": 648130},
+  "shortcut_fraction": 0.9312483606683845,
+  "bitwise_checked_shortcuts": 603570,
+  "all_golden_checks_passed": true,
+  "phase_diagnostic_seconds": {"stats": 0.010118333, "fit_predict": 0.098406250, "sampled_loop": 4.178596541, "winner_details": 0.000777541},
+  "residual_sample": {"total_captured_stacks": 601, "compute_base_score_self_stacks": 274, "hashing_insertion_rehashing_self_stacks": 174, "limitation": "Short sampling window; startup and training may be missed. Not a complete wall-time allocation."},
+  "base_score_bytes": 128,
+  "score_key_bytes": 24,
+  "time_for_10x_vs_paired_original_seconds": 0.401,
+  "additional_speedup_needed_from_prototype": 1.920199501246883,
+  "production_sha256": {"src/ridge.rs": "30732819665b6372a1132b926a15e3bfa41ed3d0cbcd881767f78d2d384ad1ed", "src/results.rs": "84de5b06d51d22474246c082ebb7c4c402e89b6ed17aaf4e14fea2e238a92587", "src/sweep.rs": "494d84af425dedc82f2f83d668b1f9894cbfb40260c5a51950c12ea19b1930da", "target/terasweep": "8b85a5034450362ea5021f5832fb187f07fa8ea9c8f8e62431cd64d1a714965e"}
+}

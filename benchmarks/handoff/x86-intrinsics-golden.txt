@@ -1,0 +1,5 @@
+mkdir -p target/
+/mnt/data/terasweep-handoff-work/rust/bin/rustc src/sweep.rs --edition=2021 -O -C panic=abort -C target-cpu=native -C lto=fat -C codegen-units=1 -o target/terasweep-funnel
+mkdir -p runs/verify-1m-CgNEK3
+TERASWEEP_LEVEL=intrinsics /usr/bin/time -p target/terasweep-funnel data/train.bin data/test.bin data/price.bin configs/sweep.json 1000000 runs/verify-1m-CgNEK3/summary.json 2> runs/verify-1m-CgNEK3/time.txt
+golden validation passed

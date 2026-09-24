@@ -1,0 +1,3 @@
+# Preserve immutable evidence and frozen matrix bytes on every platform.
+benchmarks/** -text
+data/*.bin -text
