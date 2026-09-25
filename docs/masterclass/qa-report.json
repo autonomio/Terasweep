@@ -1,0 +1,438 @@
+{
+  "status": "PASS",
+  "browser": "Chromium via Playwright",
+  "rendering_method": "set_content; local file/http URL navigation is restricted in this QA environment",
+  "desktop_viewport": [
+    1440,
+    1100
+  ],
+  "mobile_viewport": [
+    390,
+    844
+  ],
+  "checks": [
+    {
+      "check": "Application initializes without JavaScript errors",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "check": "Thirteen chapters",
+      "passed": true
+    },
+    {
+      "check": "Desktop layout brief",
+      "passed": true,
+      "detail": [
+        1440,
+        1440
+      ]
+    },
+    {
+      "check": "Desktop layout reference",
+      "passed": true,
+      "detail": [
+        1440,
+        1440
+      ]
+    },
+    {
+      "check": "Desktop layout model",
+      "passed": true,
+      "detail": [
+        1440,
+        1440
+      ]
+    },
+    {
+      "check": "Desktop layout sweep",
+      "passed": true,
+      "detail": [
+        1440,
+        1440
+      ]
+    },
+    {
+      "check": "Desktop layout scorer",
+      "passed": true,
+      "detail": [
+        1440,
+        1440
+      ]
+    },
+    {
+      "check": "Desktop layout profile",
+      "passed": true,
+      "detail": [
+        1440,
+        1440
+      ]
+    },
+    {
+      "check": "Desktop layout cache",
+      "passed": true,
+      "detail": [
+        1440,
+        1440
+      ]
+    },
+    {
+      "check": "Desktop layout simd",
+      "passed": true,
+      "detail": [
+        1440,
+        1440
+      ]
+    },
+    {
+      "check": "Desktop layout assembly",
+      "passed": true,
+      "detail": [
+        1440,
+        1440
+      ]
+    },
+    {
+      "check": "Desktop layout evidence",
+      "passed": true,
+      "detail": [
+        1440,
+        1440
+      ]
+    },
+    {
+      "check": "Desktop layout funnel",
+      "passed": true,
+      "detail": [
+        1440,
+        1440
+      ]
+    },
+    {
+      "check": "Desktop layout scale",
+      "passed": true,
+      "detail": [
+        1440,
+        1440
+      ]
+    },
+    {
+      "check": "Desktop layout reproduce",
+      "passed": true,
+      "detail": [
+        1440,
+        1440
+      ]
+    },
+    {
+      "check": "All source references resolve",
+      "passed": true
+    },
+    {
+      "check": "Ridge alpha changes without changing selected Gram statistic",
+      "passed": true
+    },
+    {
+      "check": "Intercept switch selects a different Gram statistic",
+      "passed": true
+    },
+    {
+      "check": "Fee invalidates only downstream stages",
+      "passed": true
+    },
+    {
+      "check": "Cost lab updates",
+      "passed": true
+    },
+    {
+      "check": "Cost direct/factored display agrees",
+      "passed": true,
+      "detail": [
+        "-2.91133%",
+        "-2.91133%",
+        "-0.29193",
+        "4 / 4"
+      ]
+    },
+    {
+      "check": "Strict max threshold proves all off",
+      "passed": true
+    },
+    {
+      "check": "Inclusive max keeps one signal",
+      "passed": true
+    },
+    {
+      "check": "Non-finite vector has scalar fallback",
+      "passed": true
+    },
+    {
+      "check": "Billion-row reference buffer bounded at 8 MiB",
+      "passed": true
+    },
+    {
+      "check": "Lane step advances to second bar",
+      "passed": true
+    },
+    {
+      "check": "Lane animation advances",
+      "passed": true
+    },
+    {
+      "check": "Assembly excerpt registers",
+      "passed": true
+    },
+    {
+      "check": "Assembly excerpt predicate",
+      "passed": true
+    },
+    {
+      "check": "Assembly excerpt masks",
+      "passed": true
+    },
+    {
+      "check": "Assembly excerpt accumulate",
+      "passed": true
+    },
+    {
+      "check": "Claim clinic provides feedback",
+      "passed": true
+    },
+    {
+      "check": "Funnel common table renders",
+      "passed": true
+    },
+    {
+      "check": "Funnel large table renders",
+      "passed": true
+    },
+    {
+      "check": "Funnel paired table renders",
+      "passed": true
+    },
+    {
+      "check": "Scaling wall finite plot",
+      "passed": true
+    },
+    {
+      "check": "Scaling gain finite plot",
+      "passed": true
+    },
+    {
+      "check": "Scaling memory finite plot",
+      "passed": true
+    },
+    {
+      "check": "Scaling multiplier finite plot",
+      "passed": true
+    },
+    {
+      "check": "Scaling reference sklearn",
+      "passed": true
+    },
+    {
+      "check": "Scaling reference limen-cli",
+      "passed": true
+    },
+    {
+      "check": "Scaling reference limen-prepared",
+      "passed": true
+    },
+    {
+      "check": "Full CLI mismatch label preserved",
+      "passed": true
+    },
+    {
+      "check": "Billion-row measured elapsed rendered",
+      "passed": true
+    },
+    {
+      "check": "Projection multiplier rendered",
+      "passed": true
+    },
+    {
+      "check": "Series can be hidden independently",
+      "passed": true
+    },
+    {
+      "check": "Amdahl saturation limit",
+      "passed": true
+    },
+    {
+      "check": "Checkpoint feedback shows correct result",
+      "passed": true
+    },
+    {
+      "check": "Chapter progress changes",
+      "passed": true
+    },
+    {
+      "check": "Notes retained while navigating",
+      "passed": true
+    },
+    {
+      "check": "Evidence modal opens",
+      "passed": true
+    },
+    {
+      "check": "Source line highlighting",
+      "passed": true
+    },
+    {
+      "check": "Escape closes evidence modal",
+      "passed": true
+    },
+    {
+      "check": "Course search returns lessons",
+      "passed": true
+    },
+    {
+      "check": "Search result navigates and closes dialog",
+      "passed": true
+    },
+    {
+      "check": "Glossary terms populated",
+      "passed": true
+    },
+    {
+      "check": "Capstone checklist checks all five concepts",
+      "passed": true
+    },
+    {
+      "check": "Notes export contains learner text",
+      "passed": true
+    },
+    {
+      "check": "Light theme switches",
+      "passed": true
+    },
+    {
+      "check": "Mobile no page overflow brief",
+      "passed": true,
+      "detail": [
+        390,
+        390
+      ]
+    },
+    {
+      "check": "Mobile no page overflow reference",
+      "passed": true,
+      "detail": [
+        390,
+        390
+      ]
+    },
+    {
+      "check": "Mobile no page overflow model",
+      "passed": true,
+      "detail": [
+        390,
+        390
+      ]
+    },
+    {
+      "check": "Mobile no page overflow sweep",
+      "passed": true,
+      "detail": [
+        390,
+        390
+      ]
+    },
+    {
+      "check": "Mobile no page overflow scorer",
+      "passed": true,
+      "detail": [
+        390,
+        390
+      ]
+    },
+    {
+      "check": "Mobile no page overflow profile",
+      "passed": true,
+      "detail": [
+        390,
+        390
+      ]
+    },
+    {
+      "check": "Mobile no page overflow cache",
+      "passed": true,
+      "detail": [
+        390,
+        390
+      ]
+    },
+    {
+      "check": "Mobile no page overflow simd",
+      "passed": true,
+      "detail": [
+        390,
+        390
+      ]
+    },
+    {
+      "check": "Mobile no page overflow assembly",
+      "passed": true,
+      "detail": [
+        390,
+        390
+      ]
+    },
+    {
+      "check": "Mobile no page overflow evidence",
+      "passed": true,
+      "detail": [
+        390,
+        390
+      ]
+    },
+    {
+      "check": "Mobile no page overflow funnel",
+      "passed": true,
+      "detail": [
+        390,
+        390
+      ]
+    },
+    {
+      "check": "Mobile no page overflow scale",
+      "passed": true,
+      "detail": [
+        390,
+        390
+      ]
+    },
+    {
+      "check": "Mobile no page overflow reproduce",
+      "passed": true,
+      "detail": [
+        390,
+        390
+      ]
+    },
+    {
+      "check": "Mobile chapter drawer opens",
+      "passed": true
+    },
+    {
+      "check": "Mobile navigation dismisses drawer",
+      "passed": true
+    },
+    {
+      "check": "No browser JavaScript errors throughout",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "check": "No external requests while using the application",
+      "passed": true,
+      "detail": []
+    }
+  ],
+  "passed": 76,
+  "total": 76,
+  "limitations": [
+    "Persistent localStorage across browser restarts was not tested because the QA page has an opaque origin. The no-storage fallback and in-session notes were exercised.",
+    "No new benchmark was executed; this QA tests the learning application."
+  ]
+}

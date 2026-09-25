@@ -1,0 +1,143 @@
+{
+  "basis_commit": "2e549d4b782e569a47888e804d2c5fc00f79906b",
+  "runtime_commit": "70525ba2673ffe6d0cff7f94df82bb786446f925",
+  "created": "2026-09-25",
+  "sources": [
+    {
+      "id": "initial",
+      "path": "benchmarks/reports/ridge_side_by_side_results.md",
+      "sha256": "175abebc33c4d1d6da17cf1e85a33ae42232e3264635e7072ae2e0bb76dc80f5",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/2e549d4b782e569a47888e804d2c5fc00f79906b/benchmarks/reports/ridge_side_by_side_results.md"
+    },
+    {
+      "id": "bounds",
+      "path": "benchmarks/reports/terasweep_simd_findings.md",
+      "sha256": "7046fe530e0a18f0d22339d34801d6d63878ac46bdae2f8b574aeccf7b097e5a",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/2e549d4b782e569a47888e804d2c5fc00f79906b/benchmarks/reports/terasweep_simd_findings.md"
+    },
+    {
+      "id": "bounds-data",
+      "path": "benchmarks/reports/terasweep_simd_exploration.json",
+      "sha256": "68e7aabed304a9bbb6c2d521b6e8db07ef9d1feb1b6ff774152f6d5bee0c2d86",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/2e549d4b782e569a47888e804d2c5fc00f79906b/benchmarks/reports/terasweep_simd_exploration.json"
+    },
+    {
+      "id": "kernel",
+      "path": "benchmarks/reports/avx512_kernel_report.md",
+      "sha256": "e49dce8938510cca30d2016265ac3265d5d8d0bb22937304032015bb44a21f06",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/2e549d4b782e569a47888e804d2c5fc00f79906b/benchmarks/reports/avx512_kernel_report.md"
+    },
+    {
+      "id": "kernel-data",
+      "path": "benchmarks/reports/avx512_kernel_results.json",
+      "sha256": "22cf8668eb90206a93342fbdb73b2220dedff7bc394942ca6c19fbb1ee69c701",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/2e549d4b782e569a47888e804d2c5fc00f79906b/benchmarks/reports/avx512_kernel_results.json"
+    },
+    {
+      "id": "assembly-report",
+      "path": "benchmarks/reports/handwritten_avx512_report.md",
+      "sha256": "80cbe165eeed22223d7e358de78f1df3b3fb47956bbb887ce3560c0e80adb574",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/2e549d4b782e569a47888e804d2c5fc00f79906b/benchmarks/reports/handwritten_avx512_report.md"
+    },
+    {
+      "id": "assembly-data",
+      "path": "benchmarks/reports/handwritten_avx512_results.json",
+      "sha256": "85cef8be916aa872b65e974edb1deefa63b2f54090a75e02f9fc024866a744c9",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/2e549d4b782e569a47888e804d2c5fc00f79906b/benchmarks/reports/handwritten_avx512_results.json"
+    },
+    {
+      "id": "funnel",
+      "path": "benchmarks/reports/terasweep_reverse_funnel_report.md",
+      "sha256": "db81888e9407279a8af03114bb51143b9f8916c804dde5032f2e94a7a4b2da12",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/2e549d4b782e569a47888e804d2c5fc00f79906b/benchmarks/reports/terasweep_reverse_funnel_report.md"
+    },
+    {
+      "id": "funnel-data",
+      "path": "benchmarks/reports/terasweep_reverse_funnel_results.json",
+      "sha256": "82301a28d92f6e744cd15d39a6232854daf446851fdd9256570f672e13fd33f6",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/2e549d4b782e569a47888e804d2c5fc00f79906b/benchmarks/reports/terasweep_reverse_funnel_results.json"
+    },
+    {
+      "id": "scaling",
+      "path": "benchmarks/reports/terasweep_scaling_report.md",
+      "sha256": "437023a91caf23f6ce85ebef39d9fb5c5332383ab1e49646f7bbc0f2a8d602ac",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/2e549d4b782e569a47888e804d2c5fc00f79906b/benchmarks/reports/terasweep_scaling_report.md"
+    },
+    {
+      "id": "scaling-data",
+      "path": "benchmarks/reports/terasweep_scaling_results.json",
+      "sha256": "1be19251a99800e3b8ddab6579f40634a9770a5d724bf98904b27e6b0e5ad0fb",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/2e549d4b782e569a47888e804d2c5fc00f79906b/benchmarks/reports/terasweep_scaling_results.json"
+    },
+    {
+      "id": "pipeline-doc",
+      "path": "docs/optimization-pipeline.md",
+      "sha256": "ca2ad7ea6fdb42454508886e704b9b69d4672997f1d9bfc3e3b6ff53454a39b6",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/70525ba2673ffe6d0cff7f94df82bb786446f925/docs/optimization-pipeline.md"
+    },
+    {
+      "id": "optimized",
+      "path": "src/optimized/mod.rs",
+      "sha256": "e5e523343f4cb15457fb9670d95e8ee19e502ba3d820003bd1fabdee003e91a3",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/70525ba2673ffe6d0cff7f94df82bb786446f925/src/optimized/mod.rs"
+    },
+    {
+      "id": "simd-source",
+      "path": "src/optimized/simd.rs",
+      "sha256": "40054da409fbef100f0cc9f4151f597930c62f89fe7ebc27db2d8171338f5cfd",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/70525ba2673ffe6d0cff7f94df82bb786446f925/src/optimized/simd.rs"
+    },
+    {
+      "id": "asm-source",
+      "path": "src/optimized/score8_gpr.S",
+      "sha256": "a96161ff768d88a140c662f5627eefcb9986e72586e294fbdde9e3a2f09feab7",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/70525ba2673ffe6d0cff7f94df82bb786446f925/src/optimized/score8_gpr.S"
+    },
+    {
+      "id": "ridge-source",
+      "path": "src/ridge.rs",
+      "sha256": "451e8f332fdeb8d1d57e1b86994b5d2da0a7455e8f0ea4ed5237baa53a59ee7a",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/70525ba2673ffe6d0cff7f94df82bb786446f925/src/ridge.rs"
+    },
+    {
+      "id": "results-source",
+      "path": "src/results.rs",
+      "sha256": "c3cfe521757710e51cd0b9e93048ff792ad73babbdf40f6c6d1b54155f4763b9",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/70525ba2673ffe6d0cff7f94df82bb786446f925/src/results.rs"
+    },
+    {
+      "id": "makefile",
+      "path": "Makefile",
+      "sha256": "3f286bd685eed232feb3b93b8418c049ae7ddb18442266d3574811b0b5397c5e",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/70525ba2673ffe6d0cff7f94df82bb786446f925/Makefile"
+    },
+    {
+      "id": "original-ridge",
+      "path": "src/ridge.rs",
+      "sha256": "30732819665b6372a1132b926a15e3bfa41ed3d0cbcd881767f78d2d384ad1ed",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/02d3faa75def4064bb90ae1f12ad7ee3f31f88e2/src/ridge.rs"
+    },
+    {
+      "id": "original-results",
+      "path": "src/results.rs",
+      "sha256": "84de5b06d51d22474246c082ebb7c4c402e89b6ed17aaf4e14fea2e238a92587",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/02d3faa75def4064bb90ae1f12ad7ee3f31f88e2/src/results.rs"
+    },
+    {
+      "id": "original-sweep",
+      "path": "src/sweep.rs",
+      "sha256": "494d84af425dedc82f2f83d668b1f9894cbfb40260c5a51950c12ea19b1930da",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/02d3faa75def4064bb90ae1f12ad7ee3f31f88e2/src/sweep.rs"
+    },
+    {
+      "id": "handoff",
+      "path": "benchmarks/handoff/README.md",
+      "sha256": "2aa5f2ea1969db931a555f5de5f3f0f265c114dfb6d8e4c7ce8fe0b5d364fe99",
+      "pinned_url": "https://github.com/mikkokotila/Terasweep/blob/2e549d4b782e569a47888e804d2c5fc00f79906b/benchmarks/handoff/README.md"
+    }
+  ],
+  "course_chapters": 13,
+  "recorded_scaling_rows": 25,
+  "no_new_benchmark_runs": true,
+  "teaching_fixtures": "Browser regression, path and lane labs use explicitly labeled illustrative data; they are not performance measurements."
+}
