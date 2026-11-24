@@ -49,15 +49,15 @@ GBDT changed 1,683 signals in the initial eight-fit comparison. TiDE uses the pi
 model in a single-series, one-step configuration with no covariates and compares
 with an independent process supplied with the same pre-windowed observations.
 The three new comparisons also verify 1,000 sampled rows per model across both
-scalar and compact scoring. [Ridge experiment](../../benchmarks/reports/terasweep_reverse_funnel_report.md#5-correctness-and-repeatability) · [Limen model contracts](https://docs.vaquum.fi/limen/reference/reference-architecture/) · [Official LightGBM regression](https://lightgbm.readthedocs.io/en/stable/pythonapi/lightgbm.LGBMRegressor.html) · [Upstream TiDE model](https://github.com/google-research/google-research/blob/5b09c22d73a9d35eb6c5d2a99b95677a45053466/tide/models.py)
+scalar and compact scoring. [Ridge experiment](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/reports/terasweep_reverse_funnel_report.md#5-correctness-and-repeatability) · [Limen model contracts](https://docs.vaquum.fi/limen/reference/reference-architecture/) · [Official LightGBM regression](https://lightgbm.readthedocs.io/en/stable/pythonapi/lightgbm.LGBMRegressor.html) · [Upstream TiDE model](https://github.com/google-research/google-research/blob/5b09c22d73a9d35eb6c5d2a99b95677a45053466/tide/models.py)
 
 All models share `train`, `score`, `bounds`, `compact`, `intrinsics` and
 `assembly` scoring levels. The `naive` and `stats` training controls currently
 require Ridge. The model checks above cover the recorded inputs and fit settings.
-The [matched sweep benchmark](../../benchmarks/sweep-scaling/README.md) compares
+The [matched sweep benchmark](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/README.md) compares
 timings and winners on Terasweep's scorer. Native Limen uses its own backtest
 accounting, which is outside that comparison.
 
-The benchmark evidence verifier checks the measured source against its preserved
-archive. Run `python3 scripts/verify_evidence.py --check-current-source` to also
-require the current checkout to match that source.
+The benchmark evidence verifier lives with the archived experiments. The
+regression fixtures used here retain their exact bytes independently.
+[Research record](README.md) · [Fixture provenance](../../tests/fixtures/README.md)

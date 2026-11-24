@@ -30,23 +30,20 @@ def main() -> None:
         assert ref in data["sources"], f"Unresolved source button: {ref}"
     course_root = Path(__file__).resolve().parent
     manifest = json.loads((course_root / "source-manifest.json").read_text())
-    receipt = manifest["matched_sweep_receipt"]
-    receipt_bytes = (course_root.parents[1] / receipt["path"]).read_bytes()
-    assert hashlib.sha256(receipt_bytes).hexdigest() == receipt["sha256"], "Matched receipt changed"
-    models = json.loads(receipt_bytes)["models"]
+    excerpt = manifest["matched_sweep_receipt"]["excerpt"]
+    excerpt_bytes = (course_root / excerpt["path"]).read_bytes()
+    assert hashlib.sha256(excerpt_bytes).hexdigest() == excerpt["sha256"], "Matched receipt excerpt changed"
+    models = json.loads(excerpt_bytes)
     table = re.search(r'<table id="matched-sweep-table">.*?</table>', text, re.S)
     assert table, "Missing matched sweep table"
     scale = table.group()
     assert set(re.findall(r'<tr data-model="([^"]+)">', scale)) == models.keys()
-    for model, record in models.items():
-        measured = next(
-            row["terasweep"] for row in record["scaling"] if row["trials"] == 1_000_000_000
-        )
+    for model, measured in models.items():
         cells = (
             f'<td>{measured["seconds"]:.2f} s</td>'
             f'<td>{measured["unique_training_configs"]:,}</td>'
             f'<td>{measured["score_cache_entries"]:,}</td>'
-            f'<td>{record["projection_anchor_trials"]:,}</td>'
+            f'<td>{measured["reference_trials"]:,}</td>'
         )
         row = re.search(rf'<tr data-model="{model}">.*?</tr>', scale)
         assert row and cells in row.group(), f"Wrong matched sweep data: {model}"

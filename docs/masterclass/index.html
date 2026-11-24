@@ -934,11 +934,12 @@ let kernel: Kernel = if assembly {
 </div></section><section class="lesson " id="reproduce" aria-labelledby="reproduce-title"><header class="chapter-header"><h1 id="reproduce-title" tabindex="-1">Reproducibility</h1><p class="lead">The retained source, inputs and experiment records identify the implementations and workloads used for the reported measurements.</p></header><div class="lesson-body"><div class="callout"><strong>Source and experiment revisions</strong>
 <p>The original source is preserved as <code>baseline-2026-05</code>, and the integrated runtime is commit <code>70525ba</code>. The original Ridge reports, raw records, archives and integrity checks are retained in <code>benchmark-handoff-2026-09-24</code> at <code>2e549d4</code>.</p><button class="ref" data-lines="" data-source="handoff" type="button">Handoff record and source identity<span aria-hidden="true"> ↗</span></button><button class="ref" data-lines="" data-source="pipeline-doc" type="button">Build and verification contract<span aria-hidden="true"> ↗</span></button></div>
 <h2>Retained records and replay commands</h2>
-<p>The reports are in <code>benchmarks/reports/</code>, the original bundles in <code>benchmarks/archives/</code>, the earlier prototypes and C oracle in <code>benchmarks/mac-history/</code>, and the handoff checks in <code>benchmarks/handoff/</code>. Compiler and Python environments can be rebuilt.</p>
+<p>The Ridge handoff preserves reports in <code>benchmarks/reports/</code>, the original bundles in <code>benchmarks/archives/</code>, the earlier prototypes and C oracle in <code>benchmarks/mac-history/</code>, and the handoff checks in <code>benchmarks/handoff/</code>. Compiler and Python environments can be rebuilt.</p>
 <div class="code-card">
 <div class="code-title">VERIFY THE PRESERVED EVIDENCE</div><pre><code>git clone https://github.com/autonomio/Terasweep.git
 cd Terasweep
-python3 scripts/verify_evidence.py
+git worktree add --detach ../Terasweep-evidence benchmark-handoff-2026-09-24
+python3 ../Terasweep-evidence/scripts/verify_evidence.py
 
 # Use a separate clean checkout for the original snapshot:
 git worktree add ../Terasweep-baseline baseline-2026-05</code></pre><button class="copy-code">Copy commands</button></div>

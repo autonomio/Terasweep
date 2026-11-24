@@ -10,7 +10,7 @@ compares Ridge, DLinear, LightGBM and TiDE against their uncached references.
 
 Open [`index.html`](index.html) from a checkout in a modern browser. The lessons
 and labs work offline. GitHub links open the public source and benchmark records
-when connected.
+when connected. [Online course](https://terasweep.autonom.io/)
 
 The HTML file can be copied on its own. Enable JavaScript for the labs. On narrow
 screens, use **Chapters** to navigate and scroll wide charts and tables
@@ -27,8 +27,8 @@ native-reference projections recorded with them.
 
 The four-model table gives measured compact-scalar times, fit counts, score-cache
 sizes and the largest measured uncached reference for each model. Its timings
-begin after input loading. [Matched sweep method](../../benchmarks/sweep-scaling/README.md) ·
-[Measurement receipt](../../benchmarks/sweep-scaling/results-m1-max.json)
+begin after input loading. [Matched sweep method](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/README.md) ·
+[Measurement receipt](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/results-m1-max.json)
 
 Progress and notes are saved only in browser local storage when available. In
 restricted/opaque-origin contexts, notes remain in memory and can be exported.
@@ -42,15 +42,15 @@ python3 source/build.py
 python3 verify.py
 ```
 
-The current copy is in `source/lessons/`. The build retains the original lesson
-payload and reads the billion-trial rows from the matched sweep receipt.
+The current copy is in `source/lessons/`. The build embeds the original lesson
+payload and an excerpt of the matched sweep receipt's billion-trial rows.
 [Source manifest](source-manifest.json) records the evidence identities.
 [Browser QA](qa-report.json) covers every chapter at desktop and mobile widths,
 the matched sweep table, the original charts, labs, glossary, notes, and exports.
 The checks render the offline page in Chromium and exercise in-session notes.
 
-The repository's `scripts/verify_evidence.py` verifies the preserved research
-archives and benchmark files.
+The research notes link to the archived experiments and the evidence verifier.
+[Research record](../research/README.md)
 
 Optional browser QA (requires Playwright and Chromium):
 

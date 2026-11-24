@@ -14,7 +14,7 @@ Limen’s SVD-based DLinear with the same return windows and fitted intercept. M
 
 ## Single run
 
-On Apple M1 Max, Terasweep took **0.226 ms** and the reference took **6.050 ms**, a **26.79×** speed ratio for one fit and predict call. [Comparison and reproduction](../../benchmarks/single-model/README.md) · [Recorded inputs and results](../../benchmarks/single-model/results-m1-max.json)
+On Apple M1 Max, Terasweep took **0.226 ms** and the reference took **6.050 ms**, a **26.79×** speed ratio for one fit and predict call. [Comparison and reproduction](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/single-model/README.md) · [Recorded inputs and results](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/single-model/results-m1-max.json)
 
 ## Sweep scaling
 
@@ -32,4 +32,4 @@ On M1 Max, the sweep used **256 × 1** training and **128 × 1** test matrices a
 | 100,000,000 | 7.408 s | 5.71 h | Projected | 2,773× |
 | 1,000,000,000 | 72.456 s | 2.38 days | Projected | 2,835× |
 
-Reference measurements through 10,000 trials passed prediction, signal, and winner parity checks. Larger reference entries extend that calibration linearly. Terasweep completed each listed size. [Method and reproduction](../../benchmarks/sweep-scaling/README.md) · [Measurement receipt](../../benchmarks/sweep-scaling/results-m1-max.json)
+Reference measurements through 10,000 trials passed prediction, signal, and winner parity checks. Larger reference entries extend that calibration linearly. Terasweep completed each listed size. [Method and reproduction](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/README.md) · [Measurement receipt](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/results-m1-max.json)

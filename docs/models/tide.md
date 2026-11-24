@@ -14,7 +14,7 @@ The pinned Google Research TiDE in TensorFlow eager mode with independent window
 
 ## Single run
 
-On Apple M1 Max, Terasweep took **274.393 ms** and the reference took **340.700 ms**, a **1.24×** speed ratio for one fit and predict call. Both runs used the same TensorFlow backend. [Comparison and reproduction](../../benchmarks/single-model/README.md) · [Recorded inputs and results](../../benchmarks/single-model/results-m1-max.json)
+On Apple M1 Max, Terasweep took **274.393 ms** and the reference took **340.700 ms**, a **1.24×** speed ratio for one fit and predict call. Both runs used the same TensorFlow backend. [Comparison and reproduction](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/single-model/README.md) · [Recorded inputs and results](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/single-model/results-m1-max.json)
 
 ## Sweep scaling
 
@@ -32,4 +32,4 @@ On M1 Max, the sweep used **256 × 1** training and **128 × 1** test matrices a
 | 100,000,000 | 11.056 s | 401.88 days | Projected | 3,140,695× |
 | 1,000,000,000 | 75.606 s | 4,018.83 days | Projected | 4,592,608× |
 
-Reference measurements through 1,000 trials passed prediction, signal, and winner parity checks. Larger reference entries extend that calibration linearly. Terasweep completed each listed size. [Method and reproduction](../../benchmarks/sweep-scaling/README.md) · [Measurement receipt](../../benchmarks/sweep-scaling/results-m1-max.json)
+Reference measurements through 1,000 trials passed prediction, signal, and winner parity checks. Larger reference entries extend that calibration linearly. Terasweep completed each listed size. [Method and reproduction](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/README.md) · [Measurement receipt](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/results-m1-max.json)

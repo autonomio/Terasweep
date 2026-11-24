@@ -143,6 +143,10 @@
   "matched_sweep_receipt": {
     "path": "benchmarks/sweep-scaling/results-m1-max.json",
     "sha256": "238060d573d1f355491aad1a85502e6c0c19c1298e5d8e8bd34863026de7713c",
-    "pinned_url": "https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/results-m1-max.json"
+    "pinned_url": "https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/results-m1-max.json",
+    "excerpt": {
+      "path": "source/matched-sweep-excerpt.json",
+      "sha256": "a4df71a93fa738883ec6c2a4a1026a9dca16862c132e97f39e1e1b9f2c2452da"
+    }
   }
 }

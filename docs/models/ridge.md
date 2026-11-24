@@ -14,7 +14,7 @@ Ridge with scikit-learn’s Cholesky solver. Maximum absolute difference `5.77e-
 
 ## Single run
 
-On Apple M1 Max, Terasweep took **0.223 ms** and the reference took **1.987 ms**, a **8.91×** speed ratio for one fit and predict call. [Comparison and reproduction](../../benchmarks/single-model/README.md) · [Recorded inputs and results](../../benchmarks/single-model/results-m1-max.json)
+On Apple M1 Max, Terasweep took **0.223 ms** and the reference took **1.987 ms**, a **8.91×** speed ratio for one fit and predict call. [Comparison and reproduction](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/single-model/README.md) · [Recorded inputs and results](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/single-model/results-m1-max.json)
 
 ## Sweep scaling
 
@@ -32,4 +32,4 @@ On M1 Max, the sweep used **256 × 13** training and **128 × 13** test matrices
 | 100,000,000 | 5.365 s | 6.17 h | Projected | 4,143× |
 | 1,000,000,000 | 51.380 s | 2.57 days | Projected | 4,326× |
 
-Reference measurements through 10,000 trials passed prediction, signal, and winner parity checks. Larger reference entries extend that calibration linearly. Terasweep completed each listed size. [Method and reproduction](../../benchmarks/sweep-scaling/README.md) · [Measurement receipt](../../benchmarks/sweep-scaling/results-m1-max.json)
+Reference measurements through 10,000 trials passed prediction, signal, and winner parity checks. Larger reference entries extend that calibration linearly. Terasweep completed each listed size. [Method and reproduction](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/README.md) · [Measurement receipt](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/results-m1-max.json)

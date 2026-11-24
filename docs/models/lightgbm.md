@@ -14,7 +14,7 @@ Official LightGBM 4.6.0 Python regression using the same settings and seed. Bit-
 
 ## Single run
 
-On Apple M1 Max, Terasweep took **39.359 ms** and the reference took **49.463 ms**, a **1.26×** speed ratio for one fit and predict call. [Comparison and reproduction](../../benchmarks/single-model/README.md) · [Recorded inputs and results](../../benchmarks/single-model/results-m1-max.json)
+On Apple M1 Max, Terasweep took **39.359 ms** and the reference took **49.463 ms**, a **1.26×** speed ratio for one fit and predict call. [Comparison and reproduction](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/single-model/README.md) · [Recorded inputs and results](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/single-model/results-m1-max.json)
 
 ## Sweep scaling
 
@@ -32,4 +32,4 @@ On M1 Max, the sweep used **256 × 55** training and **128 × 55** test matrices
 | 100,000,000 | 7.690 s | 3.65 days | Projected | 41,024× |
 | 1,000,000,000 | 77.479 s | 36.51 days | Projected | 40,717× |
 
-Reference measurements through 10,000 trials passed prediction, signal, and winner parity checks. Larger reference entries extend that calibration linearly. Terasweep completed each listed size. [Method and reproduction](../../benchmarks/sweep-scaling/README.md) · [Measurement receipt](../../benchmarks/sweep-scaling/results-m1-max.json)
+Reference measurements through 10,000 trials passed prediction, signal, and winner parity checks. Larger reference entries extend that calibration linearly. Terasweep completed each listed size. [Method and reproduction](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/README.md) · [Measurement receipt](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/results-m1-max.json)

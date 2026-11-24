@@ -36,11 +36,14 @@ export TERASWEEP_TIDE_SOURCE="$PWD/runs/tide-reference/models.py"
 ## Return inputs
 
 DLinear and TiDE take a single observed return column and one next-return
-target per row, both in percentage points. To reproduce the recorded market
-fixture, install NumPy and Polars in a Python environment and run the input
-preparation command. It creates `train.bin` and `test.bin` plus the retained
-price file used in historical sweep tests.
+target per row, both in percentage points. Use the bundled return matrices for
+an example sweep.
 
 ```sh
-python3 scripts/prepare_return_inputs.py runs/return-inputs
+make run CONFIG=configs/dlinear.json TRAIN=tests/fixtures/returns/train.bin \
+  TEST=tests/fixtures/returns/test.bin PRICE=tests/fixtures/returns/price.bin \
+  RUNS=1000 OUT=runs/dlinear-example
 ```
+
+Use `CONFIG=configs/tide.json` with the same matrices after setting up TiDE.
+[Fixture provenance](../tests/fixtures/README.md)

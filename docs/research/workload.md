@@ -35,6 +35,6 @@ including `signal_rule`, `threshold`, `fee_bps`, and `slippage_bps`. `RUNS`
 supplies the trial count. Outputs are rounded to 3 decimals for MAE and signal
 rate, 1 for return, and 2 for Sharpe.
 
-The [matched sweep benchmark](../../benchmarks/sweep-scaling/README.md) slices
+The [matched sweep benchmark](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/README.md) slices
 these inputs to 256 training and 128 test rows per model and records the exact
 fixture hashes and grids.

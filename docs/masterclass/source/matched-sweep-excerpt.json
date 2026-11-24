@@ -1,0 +1,26 @@
+{
+  "ridge": {
+    "seconds": 51.379865333,
+    "unique_training_configs": 6,
+    "score_cache_entries": 12036,
+    "reference_trials": 10000
+  },
+  "dlinear": {
+    "seconds": 72.455884708,
+    "unique_training_configs": 18,
+    "score_cache_entries": 36108,
+    "reference_trials": 10000
+  },
+  "lightgbm": {
+    "seconds": 77.478861292,
+    "unique_training_configs": 8,
+    "score_cache_entries": 16048,
+    "reference_trials": 10000
+  },
+  "tide": {
+    "seconds": 75.605598375,
+    "unique_training_configs": 4,
+    "score_cache_entries": 24024,
+    "reference_trials": 1000
+  }
+}
