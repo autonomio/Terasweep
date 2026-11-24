@@ -15,3 +15,21 @@ The pinned Google Research TiDE in TensorFlow eager mode with independent window
 ## Single run
 
 On Apple M1 Max, Terasweep took **274.393 ms** and the reference took **340.700 ms**, a **1.24×** speed ratio for one fit and predict call. Both runs used the same TensorFlow backend. [Comparison and reproduction](../../benchmarks/single-model/README.md) · [Recorded inputs and results](../../benchmarks/single-model/results-m1-max.json)
+
+## Sweep scaling
+
+On M1 Max, the sweep used **256 × 1** training and **128 × 1** test matrices and 4 distinct fit settings. The uncached Google Research TiDE reference refit each trial and used the same scalar scorer on the same trial order.
+
+| Sampled trials | Terasweep measured | Reference time | Reference basis | Ratio |
+| ---: | ---: | ---: | --- | ---: |
+| 10 | 6.064 s | 4.472 s | Measured | 0.74× |
+| 100 | 3.650 s | 33.229 s | Measured | 9.10× |
+| 1,000 | 3.413 s | 5.83 min | Measured | 103× |
+| 10,000 | 3.395 s | 57.92 min | Projected | 1,024× |
+| 100,000 | 3.449 s | 9.65 h | Projected | 10,068× |
+| 1,000,000 | 3.508 s | 4.02 days | Projected | 98,983× |
+| 10,000,000 | 4.038 s | 40.19 days | Projected | 859,835× |
+| 100,000,000 | 11.056 s | 401.88 days | Projected | 3,140,695× |
+| 1,000,000,000 | 75.606 s | 4,018.83 days | Projected | 4,592,608× |
+
+Reference measurements through 1,000 trials passed prediction, signal, and winner parity checks. Larger reference entries extend that calibration linearly. Terasweep completed each listed size. [Method and reproduction](../../benchmarks/sweep-scaling/README.md) · [Measurement receipt](../../benchmarks/sweep-scaling/results-m1-max.json)
