@@ -15,34 +15,40 @@ DEFAULT_BINARY = ROOT / "target/terasweep-funnel"
 MCP_PROTOCOL = "2025-11-25"
 TOOL = "terasweep_fit"
 
+POSITIVE = {"type": "number", "exclusiveMinimum": 0}
+NONNEGATIVE = {"type": "number", "minimum": 0}
+SIZE = {"type": "integer", "minimum": 1, "maximum": 2**64 - 1}
+NATIVE_INT = dict(SIZE, maximum=2**31 - 1)
+SEED = dict(SIZE, minimum=0, maximum=2**32 - 1)
+
 FIELDS = {
-    "ridge": (
-        ("alpha", "number"),
-        ("fit_intercept", "boolean"),
-        ("solver_eps", "number"),
-    ),
-    "dlinear": (
-        ("alpha", "number"),
-        ("lookback", "integer"),
-        ("kernel", "integer"),
-        ("solver_eps", "number"),
-    ),
-    "lightgbm": (
-        ("learning_rate", "number"),
-        ("num_trees", "integer"),
-        ("num_leaves", "integer"),
-        ("max_bins", "integer"),
-        ("lambda_l2", "number"),
-        ("min_data_in_leaf", "integer"),
-        ("seed", "integer"),
-    ),
-    "tide": (
-        ("lookback", "integer"),
-        ("hidden_width", "integer"),
-        ("learning_rate", "number"),
-        ("epochs", "integer"),
-        ("seed", "integer"),
-    ),
+    "ridge": {
+        "alpha": NONNEGATIVE,
+        "fit_intercept": {"type": "boolean"},
+        "solver_eps": NONNEGATIVE,
+    },
+    "dlinear": {
+        "alpha": POSITIVE,
+        "lookback": SIZE,
+        "kernel": {**SIZE, "not": {"multipleOf": 2}},
+        "solver_eps": NONNEGATIVE,
+    },
+    "lightgbm": {
+        "learning_rate": POSITIVE,
+        "num_trees": NATIVE_INT,
+        "num_leaves": dict(NATIVE_INT, minimum=2),
+        "max_bins": dict(NATIVE_INT, minimum=2),
+        "lambda_l2": NONNEGATIVE,
+        "min_data_in_leaf": NATIVE_INT,
+        "seed": SEED,
+    },
+    "tide": {
+        "lookback": SIZE,
+        "hidden_width": SIZE,
+        "learning_rate": POSITIVE,
+        "epochs": SIZE,
+        "seed": SEED,
+    },
 }
 
 
@@ -61,13 +67,13 @@ def schemas():
             object_schema(
                 {
                     "kind": {"const": kind},
-                    **{name: {"type": type_} for name, type_ in fields},
+                    **fields,
                 }
             )
             for kind, fields in FIELDS.items()
         ]
     }
-    base = {"version": {"const": 1}, "model": models}
+    base = {"version": {"type": "integer", "const": 1}, "model": models}
     identity = object_schema(
         {
             "rows": {"type": "integer", "minimum": 1},
@@ -119,27 +125,45 @@ def validate_request(packet):
         "test",
     }:
         raise ValueError("The request requires exactly version, model, train and test")
-    if type(packet["version"]) is not int or packet["version"] != 1:
+    if type(packet["version"]) not in (int, float) or packet["version"] != 1:
         raise ValueError("Unsupported fit packet version. Use version 1")
     model = packet["model"]
     kind = model.get("kind") if isinstance(model, dict) else None
     if not isinstance(kind, str) or kind not in FIELDS:
         raise ValueError("Select one model kind from ridge, dlinear, lightgbm and tide")
     fields = FIELDS[kind]
-    if model.keys() != {"kind", *(name for name, _ in fields)}:
-        raise ValueError(
-            f"The {kind} model requires exactly: {', '.join(name for name, _ in fields)}"
-        )
-    args = [kind]
-    accepted = {"number": (int, float), "integer": (int,), "boolean": (bool,)}
-    for name, type_ in fields:
-        value = model[name]
-        if type(value) not in accepted[type_] or (
-            type_ == "number" and not math.isfinite(value)
-        ):
-            raise ValueError(f"{kind}.{name} must be a finite {type_}")
-        args.append(str(value).lower())
-    return args
+    if model.keys() != {"kind", *fields}:
+        raise ValueError(f"The {kind} model requires exactly: {', '.join(fields)}")
+    return [
+        kind,
+        *(
+            command_value(f"{kind}.{name}", model[name], rule)
+            for name, rule in fields.items()
+        ),
+    ]
+
+
+def command_value(name, value, rule):
+    type_ = rule["type"]
+    if type_ == "boolean":
+        if type(value) is not bool:
+            raise ValueError(f"{name} must be a boolean")
+        return str(value).lower()
+    if type(value) not in (int, float) or not math.isfinite(value):
+        raise ValueError(f"{name} must be a finite {type_}")
+    if type_ == "integer":
+        if value != int(value):
+            raise ValueError(f"{name} must be an integer")
+        value = int(value)
+    if "minimum" in rule and value < rule["minimum"]:
+        raise ValueError(f"{name} must be at least {rule['minimum']}")
+    if "exclusiveMinimum" in rule and value <= rule["exclusiveMinimum"]:
+        raise ValueError(f"{name} must exceed {rule['exclusiveMinimum']}")
+    if "maximum" in rule and value > rule["maximum"]:
+        raise ValueError(f"{name} must be at most {rule['maximum']}")
+    if "not" in rule and value % rule["not"]["multipleOf"] == 0:
+        raise ValueError(f"{name} must be odd")
+    return str(value)
 
 
 def load_matrix(value):

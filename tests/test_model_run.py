@@ -81,20 +81,22 @@ class ModelRunTest(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     def test_dlinear_single_window(self):
+        # JSON Schema treats numeric values with zero fractional part as integers.
+        self.packet["version"] = 1.0
         self.packet["model"] = {
             "kind": "dlinear",
             "alpha": 1.0,
-            "lookback": 1,
-            "kernel": 1,
+            "lookback": 1.0,
+            "kernel": 1.0,
             "solver_eps": 1e-12,
         }
         result = invoke("fit", "-", input=json.dumps(self.packet))
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertAlmostEqual(json.loads(result.stdout)["predictions"][0], 20 / 3)
         self.packet["model"]["kernel"] = 2
-        self.assertNotEqual(
-            invoke("fit", "-", input=json.dumps(self.packet)).returncode, 0
-        )
+        invalid = invoke("fit", "-", input=json.dumps(self.packet))
+        self.assertNotEqual(invalid.returncode, 0)
+        self.assertIn("dlinear.kernel must be odd", invalid.stderr)
 
     def test_extra_keys_and_unsupported_versions_fail(self):
         for packet in (dict(self.packet, runs=100), dict(self.packet, version=2)):
