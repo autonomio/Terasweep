@@ -89,7 +89,7 @@ textarea { display: block; width: 100%; resize: vertical; }
 .progress-track { margin-top: 10px; height: 2px; background: var(--line); }
 #progress-fill { height: 100%; width: 0; background: var(--accent); }
 #export-notes-top { margin: 14px 8px 0; font-size: 15px; }
-.noscript { grid-column: 1 / -1; padding-block: 18px; color: var(--muted); }
+.noscript { margin: 0; padding-block: 18px; color: var(--muted); }
 
 .js .lesson:not(.active) { display: none; }
 .chapter-header { padding: 74px 0 52px; border-bottom: 1px solid var(--line); margin-bottom: 48px; }
