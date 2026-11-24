@@ -27,8 +27,8 @@ make build
 TERASWEEP_CHECK_BASE=1 runs/reference-venv/bin/python scripts/verify_model_parity.py
 ```
 
-The audit prints per-fit counts and errors as JSON and exits nonzero on a
-mismatch. Pass model names such as `ridge dlinear` to run a subset. The CLI
+The audit runs the full bundled training grids for DLinear, LightGBM and TiDE.
+It prints per-fit counts and errors as JSON and exits nonzero on a mismatch. Pass model names such as `ridge dlinear` to run a subset. The CLI
 loads LightGBM only for `lightgbm` and starts TensorFlow only for `tide`.
 The TiDE adapter verifies the upstream source digest before importing it.
 
@@ -37,15 +37,15 @@ The TiDE adapter verifies the upstream source digest before importing it.
 | Model | Fits | Predictions | Maximum absolute error | Signal differences |
 | --- | ---: | ---: | ---: | ---: |
 | Ridge | 6 | 8,586 | `3.86e-14` | 0 |
-| DLinear | 12 | 22,068 | `1.03e-16` | 0 |
-| LightGBM | 8 | 9,088 | `0` | 0 |
-| TiDE | 2 | 3,678 | `0` | 0 |
+| DLinear | 18 | 33,102 | `1.03e-16` | 0 |
+| LightGBM | 1,440 | 1,635,840 | `0` | 0 |
+| TiDE | 16 | 29,424 | `0` | 0 |
 
 Ridge replays the archived 1,014-row ordered plan and refits the current Limen
 Ridge reference. DLinear refits Limen's SVD reference with the same single-channel
 return windows and fitted intercept. LightGBM compares the official C API with
 the Python regression estimator on the same frozen arrays. The original custom
-GBDT changed 1,683 signals over these cases. TiDE uses the pinned Google Research
+GBDT changed 1,683 signals in the initial eight-fit comparison. TiDE uses the pinned Google Research
 model in a single-series, one-step configuration with no covariates and compares
 with an independent process supplied with the same pre-windowed observations.
 The three new comparisons also verify 1,000 sampled rows per model across both

@@ -203,15 +203,11 @@ def dlinear(binary, work, fixture):
     test_x, _ = read_matrix(fixture / "test.bin")
     train_x, test_x = train_x[:, 0], test_x[:, 0]
     config = json.loads((ROOT / "configs/dlinear.json").read_text())
-    config.update(
-        alphas={"log_min": -1, "log_max": 1, "count": 3},
-        fit_intercept=[True],
-        solver_eps=[1e-14],
-        lookbacks=[2, 3],
-        kernels=[1, 3],
-    )
+    alphas = config["alphas"]
     axes = {
-        "alpha": [0.1, 1.0, 10.0],
+        "alpha": np.logspace(
+            alphas["log_min"], alphas["log_max"], alphas["count"]
+        ).tolist(),
         "fit_intercept": config["fit_intercept"],
         "solver_eps": config["solver_eps"],
         "lookback": config["lookbacks"],
@@ -246,14 +242,16 @@ def lightgbm(binary, work, _fixture):
     test_x, _ = read_matrix(data / "test.bin")
     config = json.loads((ROOT / "configs/lightgbm.json").read_text())
     axes = {
-        "learning_rate": [0.01, 0.1],
-        "num_trees": [4, 32],
-        "num_leaves": [7],
-        "max_bins": [8, 32],
-        "lambda_l2": [0.1],
-        "min_data_in_leaf": [20],
+        key: config[key]
+        for key in (
+            "learning_rate",
+            "num_trees",
+            "num_leaves",
+            "max_bins",
+            "lambda_l2",
+            "min_data_in_leaf",
+        )
     }
-    config.update(axes)
     export, _ = run(binary, work, data, config, 1000)
     cases = []
     for params, actual in json_fits(export, axes):
@@ -285,17 +283,11 @@ def lightgbm(binary, work, _fixture):
 def tide(binary, work, fixture):
     config = json.loads((ROOT / "configs/tide.json").read_text())
     axes = {
-        "lookback": [3, 6],
-        "hidden_width": [8],
-        "learning_rate": [0.001],
-        "epochs": [2],
+        "lookback": config["lookbacks"],
+        "hidden_width": config["hidden_width"],
+        "learning_rate": config["learning_rate"],
+        "epochs": config["epochs"],
     }
-    config.update(
-        {
-            "lookbacks": axes["lookback"],
-            **{k: v for k, v in axes.items() if k != "lookback"},
-        }
-    )
     export, _ = run(binary, work, fixture, config, 1000)
     train_x, train_y = read_matrix(fixture / "train.bin")
     test_x, _ = read_matrix(fixture / "test.bin")
