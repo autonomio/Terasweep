@@ -100,6 +100,23 @@ pub fn run(
         summary.record(row);
     }
 
+    results::export_predictions(train_cache.iter().map(|fit| {
+        let config = fit.config;
+        (
+            format!(
+                "{{\"learning_rate\": {}, \"num_trees\": {}, \"num_leaves\": {}, \"max_bins\": {}, \"lambda_l2\": {}, \"min_data_in_leaf\": {}}}",
+                results::json_float(config.learning_rate),
+                config.num_trees,
+                config.num_leaves,
+                config.max_bins,
+                results::json_float(config.lambda_l2),
+                config.min_data_in_leaf,
+            ),
+            fit.fit_failed,
+            fit.preds.as_slice(),
+        )
+    }))?;
+
     let best_return_json = row_json(
         summary.best_return(),
         &model,

@@ -67,3 +67,8 @@ The runner writes `summary.json` and `time.txt` under the selected run directory
 See [Ridge execution levels](docs/optimization-pipeline.md) for compact caching,
 Rust AVX-512 intrinsics, handwritten assembly, validation, and exact-plan replay.
 `make` now preserves the historical executable and builds `target/terasweep-funnel`.
+
+## Model reference parity
+
+See [Model reference parity](docs/model-reference-parity.md) for the replay
+command, the tested input contracts, and the status of each model.

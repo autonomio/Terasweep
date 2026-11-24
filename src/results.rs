@@ -985,3 +985,24 @@ pub fn json_float(value: f64) -> String {
         "null".to_string()
     }
 }
+
+pub fn export_predictions<'a>(
+    fits: impl Iterator<Item = (String, bool, &'a [f64])>,
+) -> std::io::Result<()> {
+    let path = match std::env::var_os("TERASWEEP_EXPORT_PREDICTIONS") {
+        Some(path) => path,
+        None => return Ok(()),
+    };
+    let mut out = std::io::BufWriter::new(fs::File::create(path)?);
+    for (params, fit_failed, predictions) in fits {
+        write!(out, "{{\"params\":{},\"fit_failed\":{},\"predictions\":[", params, fit_failed)?;
+        for (index, value) in predictions.iter().enumerate() {
+            if index > 0 {
+                write!(out, ",")?;
+            }
+            write!(out, "{}", json_float(*value))?;
+        }
+        writeln!(out, "]}}")?;
+    }
+    out.flush()
+}
