@@ -90,6 +90,56 @@ with sync_playwright() as p:
  page.evaluate("navigate('simd')");page.locator('#lane-lab').scroll_into_view_if_needed();page.screenshot(path=str(BUILD/'mobile-lanes.png'))
  page.evaluate("navigate('scale')");page.locator('#scale-lab').scroll_into_view_if_needed();page.screenshot(path=str(BUILD/'mobile-scaling.png'))
  page.locator('[data-open=evidence]').first.click();page.evaluate("selectSource('asm-source')");page.screenshot(path=str(BUILD/'mobile-evidence.png'));page.keyboard.press('Escape')
+ # Check individual readouts as well as the page boundary.
+ page.evaluate('document.fonts.ready')
+ readout_issues = []
+ page.evaluate("""$('#ridge-intercept').checked=true; $('#ridge-alpha').value='-0.05'; renderRidge();
+                  $('#fee').value='0'; $('#slip').value='0'; renderCosts();
+                  $('#amdahl-p').value='99.99'; $('#amdahl-s').value='100'; renderAmdahl();""")
+ for width in (320, 390, 521, 640, 861, 920, 1101, 1440):
+  page.set_viewport_size({'width': width, 'height': 900})
+  for chapter in ('reference', 'model', 'sweep', 'scorer', 'profile', 'cache', 'scale', 'evidence'):
+   page.evaluate('(id)=>navigate(id)', chapter)
+   issues = page.locator('.lesson.active :is(.metric, .stat-strip) strong').evaluate_all("""values => values.flatMap(value => {
+     const range = document.createRange();
+     range.selectNodeContents(value);
+     const [first, ...rest] = range.getClientRects();
+     const box = value.getBoundingClientRect();
+     const cell = value.parentElement;
+     const top = cell.getBoundingClientRect().top;
+     const misaligned = [...cell.parentElement.children].some(peer =>
+       Math.abs(peer.getBoundingClientRect().top - top) < 1 &&
+       Math.abs(peer.querySelector('strong').getBoundingClientRect().top - box.top) > 1);
+     return first && (rest.some(line => line.top !== first.top) ||
+       [first, ...rest].some(line => line.right > box.right + 1) || misaligned) ? [value.textContent] : [];
+   })""")
+   readout_issues.extend((width, chapter, value) for value in issues)
+ check('Lab readouts stay on one line and align across cells', not readout_issues, readout_issues)
+ page.evaluate("navigate('model')")
+ check('Ridge axis label clears the tick labels', page.locator('#ridge-chart svg').evaluate("""svg => {
+   const label = svg.querySelector('.axis-label').getBBox();
+   const tick = svg.querySelector('.axis-label').previousElementSibling.getBBox();
+   return label.y > tick.y + tick.height;
+ }"""))
+ page.set_viewport_size({'width': 390, 'height': 844})
+ page.evaluate("navigate('simd')")
+ check('SIMD equity values fit in their own cells', page.locator('#lane-board tr:last-child td').evaluate_all("""cells => cells.every(cell => {
+   const range = document.createRange();
+   range.selectNodeContents(cell);
+   return range.getBoundingClientRect().width <= cell.clientWidth - 9;
+ })"""))
+ page.evaluate("navigate('scale')")
+ chart = page.get_by_role('region', name='Scaling chart')
+ chart.focus()
+ page.keyboard.press('ArrowRight')
+ page.wait_for_function("$('#scale-chart').scrollLeft > 0 || state.chapter !== 'scale'")
+ check('Arrow keys scroll the scaling chart without changing chapter',
+       chart.evaluate('(chart)=>chart.scrollLeft > 0') and page.locator('#scale.active').count()==1)
+ point = chart.locator('[data-plot-level="original"][data-plot-size="0"]')
+ point.focus()
+ page.keyboard.press('Enter')
+ check('Keyboard can select a chart point and retain focus',
+       page.locator('#scale-n').input_value()=='0' and point.evaluate('(point)=>document.activeElement === point'))
  check('No browser JavaScript errors throughout',not errors,errors)
  check('No external requests while using the application',not requests,requests)
  fallback = b.new_page(viewport={'width': 1440, 'height': 1100}, java_script_enabled=False)

@@ -439,6 +439,27 @@
       "passed": true
     },
     {
+      "check": "Lab readouts stay on one line and align across cells",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "check": "Ridge axis label clears the tick labels",
+      "passed": true
+    },
+    {
+      "check": "SIMD equity values fit in their own cells",
+      "passed": true
+    },
+    {
+      "check": "Arrow keys scroll the scaling chart without changing chapter",
+      "passed": true
+    },
+    {
+      "check": "Keyboard can select a chart point and retain focus",
+      "passed": true
+    },
+    {
       "check": "No browser JavaScript errors throughout",
       "passed": true,
       "detail": []
@@ -453,8 +474,8 @@
       "passed": true
     }
   ],
-  "passed": 82,
-  "total": 82,
+  "passed": 87,
+  "total": 87,
   "limitations": [
     "The opaque origin exercises in-session notes and the no-storage fallback. Persistent localStorage across browser restarts is outside this check.",
     "Browser checks exercise the learning application using retained benchmark evidence."

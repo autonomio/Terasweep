@@ -1,7 +1,7 @@
 <section aria-labelledby="matched-sweeps-title" id="matched-sweeps">
 <h2 id="matched-sweeps-title">Four matched sweeps on Apple M1 Max</h2>
 <p>Each model used 256 training and 128 test rows from its retained market-data fixture. Compact scalar scoring was timed for nine Terasweep sweep sizes, from 10 to one billion trials. All four billion-trial runs completed with zero failed rows and reused existing fits whenever their training settings matched.</p>
-<div class="table-wrap">
+<div class="table-wrap" tabindex="0" role="region" aria-label="Matched sweep results">
 <table id="matched-sweep-table">
 <caption>One billion sampled trials per model</caption>
 <thead>
@@ -20,12 +20,12 @@
 <label>Native reference <select id="scale-reference"><option value="limen-prepared">Limen Ridge · same matrices</option><option value="sklearn">Bare sklearn · same matrices</option><option value="limen-cli">Full CLI · different calibration workload</option></select></label></div>
 <div class="context-bar" id="scale-warning"></div>
 <div class="legend-controls" id="scale-series"></div>
-<div id="scale-chart"></div>
+<div id="scale-chart" tabindex="0" role="region" aria-label="Scaling chart"></div>
 <div class="control-row">
 <label>Measured size <input id="scale-n" max="4" min="0" step="1" type="range" value="4"/><output id="scale-n-out">1b</output></label>
 <label>Selected stage <select id="scale-level"><option value="original">Original factorized Rust</option><option value="bounds">+ Bounds</option><option value="compact">+ Compact cache</option><option value="intrinsics">+ Rust intrinsics</option><option selected="" value="assembly">+ Handwritten assembly</option></select></label></div>
 <div class="metric-grid four" id="scale-readout"></div>
-<div class="table-wrap" id="scale-table"></div>
+<div class="table-wrap" id="scale-table" tabindex="0" role="region" aria-label="Scaling results by stage"></div>
 <p class="fine">Each plotted Rust result comes from one fresh process with initially empty computational caches. All runs are shown, and OS file caches were left intact. Lines connect the recorded points.</p><button class="secondary" id="download-scaling">Export recorded scaling data ↓</button></div>
 <h2>Native reference calibration</h2>
 <p>The same-matrix native Ridge reference was timed twice at each of 256 and 2,048 evaluations, with a fresh sklearn fit and native metrics per evaluation. The fitted cost model is</p>
@@ -35,7 +35,7 @@
 <div class="callout warning"><strong>Variation in the calibration</strong>
 <p>The line assumes a constant per-evaluation cost. The two prepared-native repetitions imply slopes of about 5.897 and 6.609 ms per row, and do not measure long-run memory, artifact I/O or scheduling effects.</p></div>
 <h2>Score-cache saturation</h2>
-<div class="table-wrap" id="coverage-table"></div>
+<div class="table-wrap" id="coverage-table" tabindex="0" role="region" aria-label="Score-cache coverage"></div>
 <p>Each of the 1,677 successful training keys has 2,006 rule and threshold combinations (<code>4 × 401 + 2 × 201</code>), for 3,364,062 possible valid base-score keys. The 100m sample reaches that ceiling. At one billion rows, about 99.54% of valid rows reuse a base score.</p>
 <div class="equation">T<sub>Rust</sub>(N) ≈ fixed training + c · unique scores(N) + dN</div>
 <p>After unique scores stop increasing, the per-row work continues to grow. With a linear native reference cost, the structural model therefore tends to a finite time ratio.</p><button class="ref" data-lines="92-115" data-source="scaling" type="button">Coverage and saturation<span aria-hidden="true"> ↗</span></button>

@@ -11,7 +11,7 @@
 <p>Each column shows one independent job. The current prediction gives its signal, while the preceding signal and current tradability determine the position.</p>
 <div class="control-row"><button class="secondary" id="lane-back">← Previous bar</button><button class="secondary" id="lane-next">Next bar →</button><button class="primary" id="lane-play">Play timeline</button>
 <label>Bar <input id="lane-time" max="11" min="0" step="1" type="range" value="0"/></label></div>
-<div class="lane-board" id="lane-board"></div>
+<div class="lane-board" id="lane-board" tabindex="0" role="region" aria-label="Scoring lanes"></div>
 <p class="lab-answer" id="lane-status" role="status"></p></div>
 <h2>Lane occupancy in the first AVX-512 prototype</h2>
 <p>The prototype grouped jobs by model and rule, leaving many eight-lane groups partly empty. At 52.7% useful AVX-512 occupancy, the first wide kernel’s median was 83.4 ms, compared with 83.6 ms for AVX2.</p>

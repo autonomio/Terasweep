@@ -56,7 +56,7 @@ $('#next-lesson').addEventListener('click',()=>navigate(DATA.chapters[Math.min(D
 $('#lesson-note').addEventListener('input',e=>{state.notes[state.chapter]=e.target.value;save();});
 $('#reset-progress').addEventListener('click',()=>{if(confirm('Reset chapter checkmarks and quiz choices? Your written notes will be kept.')){state.done=[];state.quiz={};state.claims={};save();progress();$$('.quiz-options button').forEach(b=>b.classList.remove('correct','incorrect'));$$('.quiz-feedback').forEach(p=>p.hidden=true);renderClaims();toast('Progress reset. Written notes retained.');}});
 window.addEventListener('hashchange',()=>navigate(location.hash.slice(1)));
-document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT','BUTTON','SUMMARY','A'].includes(document.activeElement.tagName)||$$('dialog[open]').length)return;if(e.key==='ArrowRight')$('#next-lesson').click();if(e.key==='ArrowLeft')$('#prev-lesson').click();if(e.key==='/'){e.preventDefault();openDialog('search');}});
+document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT','BUTTON','SUMMARY','A'].includes(document.activeElement.tagName)||$$('dialog[open]').length)return;if(e.key==='/'){e.preventDefault();openDialog('search');return;}if(e.target.closest('.table-wrap, .lane-board, #scale-chart, #funnel-chart'))return;if(e.key==='ArrowRight')$('#next-lesson').click();if(e.key==='ArrowLeft')$('#prev-lesson').click();});
 document.addEventListener('click',e=>{
  const go=e.target.closest('[data-go]');if(go){if(go.tagName==='A'&&(e.metaKey||e.ctrlKey||e.shiftKey||e.altKey))return;e.preventDefault();navigate(go.dataset.go);return;}
  const ref=e.target.closest('[data-source]');if(ref){openSource(ref.dataset.source,ref.dataset.lines||'');return;}
@@ -98,11 +98,11 @@ function renderRidge(){
  const x=[0,1,2,3,4,5,6,7],y=[1.4,2.1,2.7,4.6,4.9,6.2,7.5,7.9],a=Math.pow(10,Number($('#ridge-alpha').value)),inter=$('#ridge-intercept').checked;
  const xm=inter?x.reduce((p,v)=>p+v,0)/x.length:0,ym=inter?y.reduce((p,v)=>p+v,0)/y.length:0;
  const g=x.reduce((p,v)=>p+(v-xm)**2,0),rhs=x.reduce((p,v,i)=>p+(v-xm)*(y[i]-ym),0),w=rhs/(g+a),b=inter?ym-xm*w:0;
- const W=420,H=275,l=35,r=18,t=16,bot=32,px=v=>l+v/7*(W-l-r),py=v=>H-bot-v/9*(H-t-bot);let s='';
+ const W=380,H=260,l=35,r=18,t=16,bot=47,px=v=>l+v/7*(W-l-r),py=v=>H-bot-v/9*(H-t-bot);let s='';
  for(let v=0;v<=8;v+=2)s+=`<line class="grid" x1="${l}" x2="${W-r}" y1="${py(v)}" y2="${py(v)}"/><text x="${l-9}" y="${py(v)+4}" text-anchor="end">${v}</text>`;
  s+=`<line x1="${px(0)}" x2="${px(7)}" y1="${py(b)}" y2="${py(7*w+b)}" stroke="var(--green)" stroke-width="2.5"/>`;
- for(let i=0;i<x.length;i++)s+=`<circle cx="${px(x[i])}" cy="${py(y[i])}" r="4.5" fill="var(--blue)"><title>Illustrative point: x=${x[i]}, y=${y[i]}</title></circle><text x="${px(i)}" y="${H-11}" text-anchor="middle">${i}</text>`;
- s+=`<text class="axis-label" x="${W-15}" y="${H-11}">x</text>`;
+ for(let i=0;i<x.length;i++)s+=`<circle cx="${px(x[i])}" cy="${py(y[i])}" r="4.5" fill="var(--blue)"><title>Illustrative point: x=${x[i]}, y=${y[i]}</title></circle><text x="${px(i)}" y="${H-bot+17}" text-anchor="middle">${i}</text>`;
+ s+=`<text class="axis-label" x="${px(3.5)}" y="${H-7}" text-anchor="middle">x</text>`;
  $('#ridge-chart').innerHTML=svgBox(s,W,H,'Illustrative ridge regression points and fitted line');
  $('#ridge-metrics').innerHTML=metric(a<.01?a.toExponential(2):fmt(a,3),'Regularization α')+metric(fmt(g,3),'Reusable G = Σ(x − x̄)²')+metric(fmt(w,4),'Fitted coefficient w')+metric(fmt(b,4),'Recovered intercept b');
  $('#ridge-explanation').textContent=`With the ${inter?'centered':'raw'} statistics, h = ${fmt(rhs,4)} and w = h / (G + α). The value of α enters only through G + α.`;
@@ -213,8 +213,13 @@ function renderScaling(){
 }
 for(const id of['scale-view','scale-reference','scale-level'])$('#'+id).addEventListener('change',renderScaling);$('#scale-n').addEventListener('input',renderScaling);
 $('#scale-series').addEventListener('click',e=>{const b=e.target.closest('[data-series]');if(!b)return;if(visibleLevels.has(b.dataset.series)){if(visibleLevels.size===1){toast('Keep at least one measured series visible.');return;}visibleLevels.delete(b.dataset.series);}else visibleLevels.add(b.dataset.series);renderScaling();});
-function selectPlot(e){const p=e.target.closest('[data-plot-level]');if(p){$('#scale-level').value=p.dataset.plotLevel;$('#scale-n').value=p.dataset.plotSize;renderScaling();}}
-$('#scale-chart').addEventListener('click',selectPlot);$('#scale-chart').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectPlot(e);}});renderScaling();
+function selectPlot(e){
+ const point=e.target.closest('[data-plot-level]');if(!point)return;
+ const {plotLevel,plotSize}=point.dataset;
+ $('#scale-level').value=plotLevel;$('#scale-n').value=plotSize;renderScaling();
+ if(e.type==='keydown')$('[data-plot-level="'+plotLevel+'"][data-plot-size="'+plotSize+'"]').focus({preventScroll:true});
+}
+$('#scale-chart').addEventListener('click',selectPlot);$('#scale-chart').addEventListener('keydown',e=>{if(e.target.matches('[data-plot-level]')&&(e.key==='Enter'||e.key===' ')){e.preventDefault();selectPlot(e);}});renderScaling();
 $('#download-scaling').addEventListener('click',()=>download('terasweep_scaling_results.json',JSON.stringify(DATA.scaling,null,2),'application/json'));
 $('#coverage-table').innerHTML=`<table><thead><tr><th>Sampled rows</th><th>Unique valid score keys</th><th>Key-space coverage</th><th>Valid rows reusing a base score</th></tr></thead><tbody>${sizes.map((n,i)=>{const r=dataRow(n,'assembly');return `<tr><td>${sizeNames[i]}</td><td>${fmt(r.score_cache_entries)}</td><td>${fmt(r.score_cache_entries/3364062*100,2)}%</td><td>${fmt((1-r.score_cache_entries/r.valid_rows)*100,2)}%</td></tr>`;}).join('')}</tbody></table>`;
 function renderAmdahl(){const pp=Number($('#amdahl-p').value),s=Number($('#amdahl-s').value),p=pp/100,gain=1/((1-p)+p/s),cap=p===1?Infinity:1/(1-p);$('#amdahl-p-out').value=fmt(pp,3)+'%';$('#amdahl-s-out').value=fmt(s,1)+'×';$('#amdahl-output').innerHTML=metric(fmt(gain,4)+'×','Calculated whole-program throughput')+metric(fmt((1-1/gain)*100,4)+'%','Calculated complete-runtime reduction')+metric(Number.isFinite(cap)?fmt(cap,4)+'×':'Unbounded','Limit with an infinitely fast target kernel')+metric(fmt(100-pp,3)+'%','Unaffected fraction of original runtime');}
