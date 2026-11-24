@@ -1,0 +1,25 @@
+name: Deploy Terasweep masterclass
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/deploy-masterclass.yml
+      - docs/masterclass/index.html
+      - docs/masterclass/verify.py
+      - docs/masterclass/deploy.sh
+      - docs/masterclass/cloudflare.config.ts
+
+permissions: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Start Cloudflare production build
+        env:
+          DEPLOY_HOOK: ${{ secrets.TERASWEEP_CLOUDFLARE_DEPLOY_HOOK }}
+        run: |
+          curl --request POST --fail --silent --show-error --output /dev/null \
+            --connect-timeout 10 --max-time 30 "$DEPLOY_HOOK"
