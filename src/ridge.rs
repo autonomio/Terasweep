@@ -183,7 +183,7 @@ impl ModelSpace {
                 results::json_f64(alpha_section, "log_min")?,
                 results::json_f64(alpha_section, "log_max")?,
                 results::json_usize(alpha_section, "count")?,
-            ),
+            )?,
             fit_intercepts: results::json_bool_array(src, "fit_intercept")?,
             solver_eps: results::json_f64_array(src, "solver_eps")?,
             plan: read_plan()?,
@@ -499,45 +499,4 @@ fn read_plan() -> Result<Option<Vec<Param>>,Box<dyn std::error::Error>> {
         rows.push(Param{train_ordinal:usize::MAX,threshold_ordinal:usize::MAX,train:TrainConfig{alpha:c[0].parse()?,fit_intercept:c[1].parse()?,solver_eps:c[2].parse()?},score:ScoreConfig{threshold:c[3].parse()?,fee_bps:c[4].parse()?,slippage_bps:c[5].parse()?,signal_rule}});
     }
     Ok(Some(rows))
-}
-
-#[cfg(all(test,target_arch="x86_64"))]
-mod boundary_tests {
-    use super::*;
-    #[test]
-    fn real_prediction_boundaries_and_masks() {
-        let train=crate::read_matrix(include_bytes!("../data/train.bin")).unwrap();
-        let test=crate::read_matrix(include_bytes!("../data/test.bin")).unwrap();
-        let p=crate::read_prices(include_bytes!("../data/price.bin")).unwrap();
-        let p=results::precompute_price_stats(&p);
-        let stats=precompute_stats(&train);
-        let cfg=[TrainConfig{alpha:1.0,fit_intercept:true,solver_eps:1e-12},TrainConfig{alpha:10.0,fit_intercept:false,solver_eps:1e-12}];
-        let cache=precompute_train_cache(&stats,&test,&cfg).unwrap();
-        let mut checked=0usize;
-        for e in cache {
-            assert!(!e.fit_failed);
-            let mut thresholds=vec![0.0,-0.0];
-            thresholds.extend(e.preds.iter().take(8));
-            thresholds.push(e.preds.iter().copied().fold(f64::INFINITY,f64::min));
-            thresholds.push(e.preds.iter().copied().fold(f64::NEG_INFINITY,f64::max));
-            let nearby:Vec<_>=thresholds.iter().flat_map(|&x|[x,x.next_up(),x.next_down()]).collect();
-            for n in [0,1,2,7,8,9,16,17,31,e.preds.len()] {
-                for missing in [false,true] {
-                    let mut prices=PriceStats{tradable:p.tradable[..n].to_vec(),r_entry:p.r_entry[..n].to_vec(),r_cont:p.r_cont[..n].to_vec()};
-                    if missing {for (i,x) in prices.tradable.iter_mut().enumerate() {if i%11==0 {*x=false;}}}
-                    let rules=[results::SignalRule::Gt,results::SignalRule::Gte,results::SignalRule::Lt,results::SignalRule::Lte,results::SignalRule::AbsGt,results::SignalRule::AbsGte];
-                    let jobs:Vec<_>=nearby.iter().flat_map(|&t|rules.iter().map(move |&r|(t,r))).collect();
-                    for used in 1..=8 {
-                        for batch in jobs.chunks(used) {
-                            for assembly in [false,true] {
-                                let output=optimized::test_batch(&e.preds[..n],&prices,batch,assembly);
-                                for (&(t,r),b) in batch.iter().zip(output) {assert!(optimized::same_base(&b,&results::compute_base_score(&e.preds[..n],t,r,&prices)));checked+=1;}
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        eprintln!("Boundary and mask full-BaseScore comparisons: {checked}");
-    }
 }

@@ -173,6 +173,18 @@ impl SweepSummary {
     pub fn best_mae(&self) -> Option<ScoredRow> {
         self.best_mae
     }
+
+    pub fn rows(&self) -> usize {
+        self.rows
+    }
+
+    pub fn failed_rows(&self) -> usize {
+        self.failed_rows
+    }
+
+    pub fn signal_rule_counts(&self) -> [usize; 6] {
+        self.signal_rule_counts
+    }
 }
 
 impl CommonSpace {
@@ -186,12 +198,12 @@ impl CommonSpace {
                 json_f64(signed_section, "min")?,
                 json_f64(signed_section, "max")?,
                 json_f64(signed_section, "step")?,
-            ),
+            )?,
             threshold_abs: grid_values(
                 json_f64(abs_section, "min")?,
                 json_f64(abs_section, "max")?,
                 json_f64(abs_section, "step")?,
-            ),
+            )?,
             fee_bps: json_f64_array(src, "fee_bps")?,
             slippage_bps: json_f64_array(src, "slippage_bps")?,
             rolling_window_bars: json_usize_optional(src, "rolling_window_bars")?.unwrap_or(96),
@@ -678,26 +690,37 @@ pub fn model_name(src: &str) -> Result<String, Box<dyn std::error::Error>> {
     Ok(json_string_optional(src, "model")?.unwrap_or_else(|| "ridge".to_string()))
 }
 
-pub fn logspace(log_min: f64, log_max: f64, count: usize) -> Vec<f64> {
-    if count == 1 {
-        return vec![10_f64.powf(log_min)];
+pub fn logspace(log_min: f64, log_max: f64, count: usize) -> Result<Vec<f64>, &'static str> {
+    if count == 0 {
+        return Err("alpha count must be positive");
     }
-    (0..count)
+    if count == 1 {
+        return Ok(vec![10_f64.powf(log_min)]);
+    }
+    Ok((0..count)
         .map(|idx| {
             let t = idx as f64 / (count - 1) as f64;
             10_f64.powf(log_min + (log_max - log_min) * t)
         })
-        .collect()
+        .collect())
 }
 
-pub fn grid_values(min: f64, max: f64, step: f64) -> Vec<f64> {
+pub fn grid_values(min: f64, max: f64, step: f64) -> Result<Vec<f64>, &'static str> {
+    let end = max + step * 0.5;
+    if !min.is_finite() || !end.is_finite() || min > max || step <= 0.0 {
+        return Err("threshold grid needs finite ordered bounds and a positive finite step");
+    }
     let mut values = Vec::new();
     let mut value = min;
-    while value <= max + step * 0.5 {
+    while value <= end {
         values.push(round_to(value, 12));
-        value += step;
+        let next = value + step;
+        if next <= value {
+            return Err("threshold step is too small to advance the grid");
+        }
+        value = next;
     }
-    values
+    Ok(values)
 }
 
 pub fn json_object<'a>(src: &'a str, key: &str) -> Result<&'a str, Box<dyn std::error::Error>> {
@@ -912,25 +935,24 @@ fn signal_active(pred: f64, threshold: f64, rule: SignalRule) -> bool {
 }
 
 pub fn write_summary_json(
-    path: &str,
+    mut out: impl Write,
     run: &RunOutput,
     hot_seconds: f64,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut out = fs::File::create(path)?;
+) -> std::io::Result<()> {
     let summary = &run.summary;
     writeln!(out, "{{")?;
-    writeln!(out, "  \"rows\": {},", summary.rows)?;
-    writeln!(out, "  \"failed_rows\": {},", summary.failed_rows)?;
+    writeln!(out, "  \"rows\": {},", summary.rows())?;
+    writeln!(out, "  \"failed_rows\": {},", summary.failed_rows())?;
     writeln!(
         out,
         "  \"valid_rows\": {},",
-        summary.rows - summary.failed_rows
+        summary.rows() - summary.failed_rows()
     )?;
     writeln!(out, "  \"hot_loop_seconds\": {:.12},", hot_seconds)?;
     writeln!(
         out,
         "  \"hot_loop_iterations_per_second\": {:.6},",
-        summary.rows as f64 / hot_seconds
+        summary.rows() as f64 / hot_seconds
     )?;
     writeln!(out, "  \"unique_alphas\": {},", run.unique_alphas)?;
     writeln!(
@@ -948,15 +970,11 @@ pub fn write_summary_json(
         "  \"score_cache_entries\": {},",
         run.score_cache_entries
     )?;
+    let [gt, gte, lt, lte, abs_gt, abs_gte] = summary.signal_rule_counts();
     writeln!(
         out,
         "  \"signal_rule_counts\": {{\"gt\": {}, \"gte\": {}, \"lt\": {}, \"lte\": {}, \"abs_gt\": {}, \"abs_gte\": {}}},",
-        summary.signal_rule_counts[0],
-        summary.signal_rule_counts[1],
-        summary.signal_rule_counts[2],
-        summary.signal_rule_counts[3],
-        summary.signal_rule_counts[4],
-        summary.signal_rule_counts[5]
+        gt, gte, lt, lte, abs_gt, abs_gte
     )?;
     writeln!(out, "  \"best_return\": {},", run.best_return_json)?;
     writeln!(out, "  \"best_sharpe\": {},", run.best_sharpe_json)?;

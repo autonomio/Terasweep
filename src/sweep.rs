@@ -1,149 +1,90 @@
-mod dlinear;
-mod model;
-mod single_fit;
-mod lightgbm;
-mod lightgbm_api;
-mod results;
-mod ridge;
-mod optimized;
-mod tide;
-
-use model::FitPrediction;
-use results::Prices;
-use std::env;
-use std::fs;
+use std::io::{self, Write};
 use std::time::Instant;
 
-const MATRIX_MAGIC: &[u8; 8] = b"RIDGE001";
-const PRICE_MAGIC: &[u8; 8] = b"PRICE001";
-const F64_BYTES: usize = 8;
+use crate::results::{self, RunOutput};
+use crate::{dlinear, lightgbm, ridge, tide, Matrix, Prices, SweepSummary};
 
-pub struct Matrix {
-    pub rows: usize,
-    pub cols: usize,
-    pub x: Vec<f64>,
-    pub y: Vec<f64>,
+/// The winning trials, cache counts, and timing of a completed sweep.
+pub struct SweepResult {
+    output: RunOutput,
+    hot_seconds: f64,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args: Vec<String> = env::args().collect();
-    if args.get(1).map_or(false, |arg| arg == "_fit") {
-        return single_fit::command(&args[2..]);
-    }
-    if args.len() != 7 {
-        return Err(
-            "usage: terasweep <train.bin> <test.bin> <price.bin> <config.json> <runs> <out.json>"
-                .into(),
-        );
+impl SweepResult {
+    /// Trial counts and per-metric winners.
+    pub fn summary(&self) -> &SweepSummary {
+        &self.output.summary
     }
 
-    let train = read_matrix(&fs::read(&args[1])?)?;
-    let test = read_matrix(&fs::read(&args[2])?)?;
-    let prices = read_prices(&fs::read(&args[3])?)?;
-    let config_json = fs::read_to_string(&args[4])?;
-    let runs: usize = args[5].parse()?;
+    /// Number of distinct fitted configurations in the configured pool.
+    pub fn training_configurations(&self) -> usize {
+        self.output.unique_train_configs
+    }
 
+    /// Number of fits in the configured pool that failed.
+    pub fn failed_training_configurations(&self) -> usize {
+        self.output.failed_train_configs
+    }
+
+    /// Number of distinct training-key, threshold, and rule combinations cached.
+    pub fn score_cache_entries(&self) -> usize {
+        self.output.score_cache_entries
+    }
+
+    /// Seconds spent fitting and running the sweep, including winner diagnostics.
+    pub fn elapsed_seconds(&self) -> f64 {
+        self.hot_seconds
+    }
+
+    /// Write the same JSON receipt as the command-line runner.
+    pub fn write_json(&self, output: impl Write) -> io::Result<()> {
+        results::write_summary_json(output, &self.output, self.hot_seconds)
+    }
+}
+
+/// Run the configured sweep on prepared matrices and aligned test prices.
+///
+/// The JSON fields and process environment use the command-line runner's
+/// configuration, including `TERASWEEP_LEVEL` and backend paths.
+pub fn sweep(
+    config_json: &str,
+    train: &Matrix,
+    test: &Matrix,
+    prices: &Prices,
+    runs: usize,
+) -> Result<SweepResult, Box<dyn std::error::Error>> {
+    if !train.has_shape() || !test.has_shape() {
+        return Err("Sweep matrices must have valid nonempty shapes".into());
+    }
     if test.cols != train.cols {
         return Err(format!("test cols {} != train cols {}", test.cols, train.cols).into());
     }
-    if prices.open.len() != test.rows {
+    if prices.open.len() != test.rows || prices.close.len() != test.rows {
         return Err(format!(
-            "price rows {} != test rows {}",
+            "price rows ({} open, {} close) != test rows {}",
             prices.open.len(),
-            test.rows
+            prices.close.len(),
+            test.rows,
         )
         .into());
     }
 
-    let price_stats = results::precompute_price_stats(&prices);
+    let price_stats = results::precompute_price_stats(prices);
     let hot_start = Instant::now();
-    let run = match results::model_name(&config_json)?
+    let run = match results::model_name(config_json)?
         .to_ascii_lowercase()
         .as_str()
     {
-        "ridge" => ridge::run(&config_json, &train, &test, &price_stats, runs)?,
-        "dlinear" => dlinear::run(&config_json, &train, &test, &price_stats, runs)?,
-        "lightgbm" => lightgbm::run(&config_json, &train, &test, &price_stats, runs)?,
-        "tide" => tide::run(&config_json, &train, &test, &price_stats, runs)?,
+        "ridge" => ridge::run(config_json, train, test, &price_stats, runs)?,
+        "dlinear" => dlinear::run(config_json, train, test, &price_stats, runs)?,
+        "lightgbm" => lightgbm::run(config_json, train, test, &price_stats, runs)?,
+        "tide" => tide::run(config_json, train, test, &price_stats, runs)?,
         other => return Err(format!("bad model value: {other}").into()),
     };
     let hot_seconds = hot_start.elapsed().as_secs_f64();
 
-    results::write_summary_json(&args[6], &run, hot_seconds)?;
-
-    Ok(())
-}
-
-fn read_matrix(bytes: &[u8]) -> Result<Matrix, Box<dyn std::error::Error>> {
-    if bytes.len() < 24 {
-        return Err("matrix file is too short".into());
-    }
-    if &bytes[0..8] != MATRIX_MAGIC {
-        return Err("invalid ridge data magic".into());
-    }
-
-    let rows = usize::try_from(u64::from_le_bytes(bytes[8..16].try_into()?))?;
-    let cols = usize::try_from(u64::from_le_bytes(bytes[16..24].try_into()?))?;
-    let x_count = rows.checked_mul(cols).ok_or("rows*cols overflow")?;
-    let expected_values = x_count.checked_add(rows).ok_or("value count overflow")?;
-    let expected = expected_values.checked_mul(F64_BYTES).and_then(|n| n.checked_add(24))
-        .ok_or("matrix byte count overflow")?;
-    if bytes.len() != expected {
-        return Err(format!(
-            "matrix size {} does not match expected {}",
-            bytes.len(),
-            expected
-        )
-        .into());
-    }
-
-    let mut offset = 24;
-    let mut x = Vec::with_capacity(x_count);
-    for _ in 0..x_count {
-        x.push(read_f64(bytes, &mut offset));
-    }
-    let mut y = Vec::with_capacity(rows);
-    for _ in 0..rows {
-        y.push(read_f64(bytes, &mut offset));
-    }
-
-    Ok(Matrix { rows, cols, x, y })
-}
-
-fn read_prices(bytes: &[u8]) -> Result<Prices, Box<dyn std::error::Error>> {
-    if bytes.len() < 16 {
-        return Err("price file is too short".into());
-    }
-    if &bytes[0..8] != PRICE_MAGIC {
-        return Err("invalid price data magic".into());
-    }
-
-    let rows = u64::from_le_bytes(bytes[8..16].try_into().unwrap()) as usize;
-    let expected = 16 + rows * F64_BYTES * 2;
-    if bytes.len() != expected {
-        return Err(format!(
-            "price size {} does not match expected {}",
-            bytes.len(),
-            expected
-        )
-        .into());
-    }
-
-    let mut offset = 16;
-    let mut open = Vec::with_capacity(rows);
-    for _ in 0..rows {
-        open.push(read_f64(bytes, &mut offset));
-    }
-    let mut close = Vec::with_capacity(rows);
-    for _ in 0..rows {
-        close.push(read_f64(bytes, &mut offset));
-    }
-
-    Ok(Prices { open, close })
-}
-
-fn read_f64(bytes: &[u8], offset: &mut usize) -> f64 {
-    let value = f64::from_le_bytes(bytes[*offset..*offset + F64_BYTES].try_into().unwrap());
-    *offset += F64_BYTES;
-    value
+    Ok(SweepResult {
+        output: run,
+        hot_seconds,
+    })
 }

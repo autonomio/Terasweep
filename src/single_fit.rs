@@ -1,8 +1,7 @@
 use std::error::Error;
 use std::io::{self, Read, Write};
 
-use crate::model::{fit_predict, Model};
-use crate::read_matrix;
+use terasweep::{fit_predict, read_matrix, Model};
 
 pub(crate) fn command(args: &[String]) -> Result<(), Box<dyn Error>> {
     let args: Vec<&str> = args.iter().map(String::as_str).collect();

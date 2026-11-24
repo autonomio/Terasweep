@@ -187,7 +187,7 @@ impl ModelSpace {
                 results::json_f64(alpha_section, "log_min")?,
                 results::json_f64(alpha_section, "log_max")?,
                 results::json_usize(alpha_section, "count")?,
-            ),
+            )?,
             fit_intercepts: results::json_bool_array(src, "fit_intercept")?,
             solver_eps: results::json_f64_array(src, "solver_eps")?,
             lookbacks: results::json_usize_array(src, "lookbacks")?,

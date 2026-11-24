@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::time::Instant;
 use crate::results::{self, BaseScore, PriceStats, CommonSpace, ScoreConfig, ScoredRow, SignalRule, SweepSummary};
 
-#[cfg(target_arch = "x86_64")]
+#[cfg(all(target_arch = "x86_64", target_os = "linux"))]
 mod simd;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -16,10 +16,10 @@ impl Level {
             _ => return Err("TERASWEEP_LEVEL must be naive/stats/train/score/bounds/compact/intrinsics/assembly".into()),
         };
         if matches!(level, Self::Intrinsics | Self::Assembly) {
-            #[cfg(target_arch="x86_64")]
+            #[cfg(all(target_arch = "x86_64", target_os = "linux"))]
             simd::check(level == Self::Assembly)?;
-            #[cfg(not(target_arch="x86_64"))]
-            return Err("AVX-512 levels require an x86-64 machine".into());
+            #[cfg(not(all(target_arch = "x86_64", target_os = "linux")))]
+            return Err("AVX-512 levels require x86-64 Linux".into());
         }
         Ok(level)
     }
@@ -125,7 +125,7 @@ pub(crate) fn sweep_cached(
 ) -> Result<usize, Box<dyn std::error::Error>> {
     match level {
         Level::Compact | Level::Intrinsics | Level::Assembly => {
-            return compact(level, runs, sample, common, cache, prices, summary);
+            return compact::<{ 1 << 20 }>(level, runs, sample, common, cache, prices, summary);
         }
         Level::Naive | Level::Stats => {
             return Err("naive and stats execution levels currently require Ridge".into());
@@ -178,7 +178,7 @@ pub(crate) fn sweep_cached(
     Ok(scores.len())
 }
 
-fn compact(
+pub(crate) fn compact<const BLOCK_ROWS: usize>(
     level: Level, runs: usize, sample: impl Fn(usize)->CachedTrial,
     common: &CommonSpace, cache: &[CachedFit<'_>], p: &PriceStats, summary: &mut SweepSummary,
 ) -> Result<usize,Box<dyn std::error::Error>> {
@@ -196,7 +196,6 @@ fn compact(
     let width=threshold_ids.len();
     let possible=cache.len().checked_mul(width).ok_or("score-key address space overflow")?;
     let mut table=Slots::new(possible,runs);
-    const BLOCK_ROWS: usize=1<<20;
     let mut rows=Vec::with_capacity(runs.min(BLOCK_ROWS));
     let mut ranges=vec![None;cache.len()];
     let mut constants=[None;2];
@@ -254,7 +253,7 @@ fn compact(
         if level==Level::Compact || !ranges[idx].unwrap().finite {
             for &j in &order[at..end] {let job=&jobs[j]; bases[job.slot]=Some(results::compute_base_score(pred,job.score.threshold,job.score.signal_rule,p));}
         } else {
-            #[cfg(target_arch="x86_64")]
+            #[cfg(all(target_arch = "x86_64", target_os = "linux"))]
             {
                 let rules:Vec<_>=order[at..end].iter().map(|&j| (jobs[j].score.threshold,jobs[j].score.signal_rule)).collect();
                 let scored=simd::batch(pred,p,&rules,level==Level::Assembly);
@@ -264,7 +263,7 @@ fn compact(
                     bases[job.slot]=Some(b);
                 }
             }
-            #[cfg(not(target_arch="x86_64"))]
+            #[cfg(not(all(target_arch = "x86_64", target_os = "linux")))]
             unreachable!();
         }
         at=end;
@@ -288,7 +287,10 @@ fn compact(
     Ok(table.len())
 }
 
-#[cfg(all(test,target_arch="x86_64"))]
+#[cfg(all(test, target_arch = "x86_64", target_os = "linux"))]
+pub(crate) use simd::check as simd_available;
+
+#[cfg(all(test, target_arch = "x86_64", target_os = "linux"))]
 pub fn test_batch(preds:&[f64],p:&PriceStats,rules:&[(f64,SignalRule)],assembly:bool)->Vec<BaseScore>{
     simd::check(assembly).unwrap();
     simd::batch(preds,p,rules,assembly)
