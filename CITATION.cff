@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: >-
+  If you use Terasweep in published work, cite the software and record the full
+  Git commit used. Cite the measurement receipt or report for benchmark results.
+title: Terasweep
+type: software
+authors:
+  - family-names: Kotila
+    given-names: Mikko
+abstract: >-
+  Factorized parameter sweeps with reusable model fits and base scores,
+  reference-checked model predictions, and reproducible performance experiments.
+keywords:
+  - parameter sweeps
+  - reproducible benchmarks
+  - numerical parity
+  - Rust
+repository-code: https://github.com/autonomio/Terasweep

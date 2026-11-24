@@ -8,6 +8,10 @@ const levels=['original','bounds','compact','intrinsics','assembly'];
 const labels={limen:'Native Limen CLI / UEL',naive:'Rust · no cross-trial reuse',stats:'+ Shared Gram statistics',train:'+ Fitted predictions',score:'+ Original score cache',original:'Original factorized Rust',bounds:'+ Constant-signal shortcut',compact:'+ Compact scoring cache',intrinsics:'+ Rust AVX-512 intrinsics',assembly:'+ Handwritten AVX-512'};
 const colors={original:'var(--off)',bounds:'var(--gold)',compact:'var(--blue)',intrinsics:'var(--green)',assembly:'var(--purple)',limen:'var(--gold)',naive:'var(--off)',stats:'var(--blue)',train:'var(--green)',score:'var(--purple)'};
 const storageKey='terasweep-masterclass-v1';
+for(const source of Object.values(DATA.sources)){
+ source.url=source.url.replace('https://github.com/mikkokotila/Terasweep','https://github.com/autonomio/Terasweep');
+ source.note=source.note.replace('when this teaching experience was prepared. The learning page is an additive layer, not a new performance experiment.','when the original learning page was prepared.');
+}
 let storageOK=true,state={chapter:'brief',done:[],notes:{},quiz:{},claims:{},theme:'dark',capstone:''};
 try{let old=JSON.parse(localStorage.getItem(storageKey)||'null');if(old&&typeof old==='object')state={...state,...old};}catch(e){storageOK=false;}
 state.done=Array.isArray(state.done)?state.done:[];state.notes=state.notes||{};state.quiz=state.quiz||{};state.claims=state.claims||{};
@@ -30,7 +34,7 @@ function navigate(id,scroll=true){
  const idx=DATA.chapters.findIndex(c=>c.id===id);$('#prev-lesson').disabled=idx===0;$('#next-lesson').disabled=idx===DATA.chapters.length-1;
  $('#next-lesson').textContent=idx===DATA.chapters.length-1?'Course complete':'Next chapter →';
  $('#lesson-note').value=state.notes[id]||'';$('#note-label').textContent=`YOUR FIELD NOTES / ${String(idx).padStart(2,'0')}`;
- $('#chapter-counter').textContent=`${String(idx).padStart(2,'0')} / 12`;document.title=`${strip(DATA.chapters[idx].title)} — Terasweep Masterclass`;
+ $('#chapter-counter').textContent=`${String(idx).padStart(2,'0')} / 12`;document.title=`${strip(DATA.chapters[idx].title)} — Terasweep performance learning`;
  try{history.replaceState(null,'','#'+id);}catch(e){}
  $('#sidebar').classList.remove('open');$('#menu-btn').setAttribute('aria-expanded','false');
  progress();if(scroll){window.scrollTo({top:0,behavior:'instant'});$('.chapter-header h1',$('#'+id)).focus({preventScroll:true});}
@@ -69,7 +73,7 @@ function openSource(id,lines=''){openDialog('evidence');selectSource(id,lines);}
 $('#source-search').addEventListener('input',renderSourceList);
 $('#source-export').addEventListener('click',()=>{const s=DATA.sources[currentSource];if(s)download(s.path.split('/').pop(),s.text);});
 $('#course-search').addEventListener('input',renderSearch);
-function renderSearch(){const q=$('#course-search').value.toLowerCase();const match=DATA.chapters.filter(c=>(strip(c.title+' '+c.lead+' '+c.body)).toLowerCase().includes(q));$('#search-results').innerHTML=match.map(c=>`<button class="search-result" data-go="${c.id}"><b>${strip(c.title)}</b><span>${esc(c.lead)}</span></button>`).join('')||'<p>No lesson matches that phrase.</p>';}
+function renderSearch(){const q=$('#course-search').value.toLowerCase();const match=DATA.chapters.filter(c=>$(`#${c.id}`).textContent.toLowerCase().includes(q));$('#search-results').innerHTML=match.map(c=>`<button class="search-result" data-go="${c.id}"><b>${strip(c.title)}</b><span>${esc($(`#${c.id} .lead`).textContent)}</span></button>`).join('')||'<p>No lesson matches that phrase.</p>';}
 for(const q of $$('.checkpoint')){
  const id=q.closest('.lesson').id,explanation=$('.quiz-feedback',q).textContent;
  function answer(n){const correct=Number(q.dataset.correct);$$('[data-choice]',q).forEach(b=>{b.classList.toggle('correct',Number(b.dataset.choice)===correct);b.classList.toggle('incorrect',Number(b.dataset.choice)===n&&n!==correct);});const p=$('.quiz-feedback',q);p.hidden=false;p.textContent=(n===correct?'Yes. ':'Not quite. ')+explanation;state.quiz[id]=n;save();}
@@ -82,7 +86,7 @@ const workloads={
 };
 function renderWorkload(k){const w=workloads[k];$$('[data-workload]').forEach(b=>b.classList.toggle('selected',b.dataset.workload===k));$('#workload-content').innerHTML=`<h3>${w.title}</h3><div class="stat-strip">${w.dims.map((x,i)=>`<div><strong>${x}</strong><span>${w.labels[i]}</span></div>`).join('')}</div><p>${w.text}</p><button class="ref" data-source="${w.source}">Open this experiment’s record ↗</button>`;}
 $('#workload-tabs').addEventListener('click',e=>{let b=e.target.closest('[data-workload]');if(b)renderWorkload(b.dataset.workload);});renderWorkload('six');
-function svgBox(content,w=700,h=300,label='Interactive teaching diagram'){return `<svg class="chart-svg" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(label)}">${content}</svg>`;}
+function svgBox(content,w=700,h=300,label='Interactive learning diagram'){return `<svg class="chart-svg" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(label)}">${content}</svg>`;}
 function renderRidge(){
  const x=[0,1,2,3,4,5,6,7],y=[1.4,2.1,2.7,4.6,4.9,6.2,7.5,7.9],a=Math.pow(10,Number($('#ridge-alpha').value)),inter=$('#ridge-intercept').checked;
  const xm=inter?x.reduce((p,v)=>p+v,0)/x.length:0,ym=inter?y.reduce((p,v)=>p+v,0)/y.length:0;
@@ -90,7 +94,7 @@ function renderRidge(){
  const W=420,H=275,l=35,r=18,t=16,bot=32,px=v=>l+v/7*(W-l-r),py=v=>H-bot-v/9*(H-t-bot);let s='';
  for(let v=0;v<=8;v+=2)s+=`<line class="grid" x1="${l}" x2="${W-r}" y1="${py(v)}" y2="${py(v)}"/><text x="${l-9}" y="${py(v)+4}" text-anchor="end">${v}</text>`;
  s+=`<line x1="${px(0)}" x2="${px(7)}" y1="${py(b)}" y2="${py(7*w+b)}" stroke="var(--green)" stroke-width="2.5"/>`;
- for(let i=0;i<x.length;i++)s+=`<circle cx="${px(x[i])}" cy="${py(y[i])}" r="4.5" fill="var(--blue)"><title>Teaching point: x=${x[i]}, y=${y[i]}</title></circle><text x="${px(i)}" y="${H-11}" text-anchor="middle">${i}</text>`;
+ for(let i=0;i<x.length;i++)s+=`<circle cx="${px(x[i])}" cy="${py(y[i])}" r="4.5" fill="var(--blue)"><title>Illustrative point: x=${x[i]}, y=${y[i]}</title></circle><text x="${px(i)}" y="${H-11}" text-anchor="middle">${i}</text>`;
  s+=`<text class="axis-label" x="${W-15}" y="${H-11}">x</text>`;
  $('#ridge-chart').innerHTML=svgBox(s,W,H,'Illustrative ridge regression points and fitted line');
  $('#ridge-metrics').innerHTML=metric(a<.01?a.toExponential(2):fmt(a,3),'Regularization α')+metric(fmt(g,3),'Reusable G = Σ(x − x̄)²')+metric(fmt(w,4),'Fitted coefficient w')+metric(fmt(b,4),'Recovered intercept b');
@@ -121,7 +125,7 @@ function renderCosts(){
  $('#path-strip').innerHTML=p.path.map(a=>`<div class="path-bar ${a.pos?'held':''}"><b>${a.i+1}</b><span>${toy.trad[a.i]?(a.pos?'LONG':'FLAT'):'GAP'}</span><br><em>${a.en&&a.ex?'E+X':a.en?'ENTRY':a.ex?'EXIT':'·'}</em></div>`).join('');
  const names=['Neither entry nor exit','Entry only','Exit only','Entry and exit'];$('#cost-categories').innerHTML=p.cats.map((c,i)=>`<tr><td>${names[i]}</td><td>${c.n}</td><td>${fmt(c.s,6)}</td><td>${fmt(c.q,6)}</td><td>${fmt(ks[i],7)}</td></tr>`).join('');
  $('#cost-output').innerHTML=metric(fmt((net-1)*100,5)+'%','Factored net return')+metric(fmt((direct-1)*100,5)+'%','Direct per-bar compounding')+metric(fmt(sharpe,5),'Factored per-bar Sharpe')+metric(`${p.entryCount} / ${p.exitCount}`,'Entries / exits');
- $('#cost-proof').textContent=`Absolute equity difference: ${Math.abs(net-direct).toExponential(2)}. First-moment difference: ${Math.abs(sum-ds).toExponential(2)}; second-moment difference: ${Math.abs(ss-dss).toExponential(2)}. Algebraically equivalent paths can differ by floating-point roundoff; this teaching lab does not claim bitwise equivalence between a regrouped formula and direct compounding. Production parity tests compare each optimized result with the original factored scorer.`;
+ $('#cost-proof').textContent=`Absolute equity difference: ${Math.abs(net-direct).toExponential(2)}. First-moment difference: ${Math.abs(sum-ds).toExponential(2)}; second-moment difference: ${Math.abs(ss-dss).toExponential(2)}. Algebraically equivalent paths can differ by floating-point roundoff. Production parity tests compare each optimized result with the original factored scorer.`;
 }
 $('#fee').addEventListener('input',renderCosts);$('#slip').addEventListener('input',renderCosts);renderCosts();
 const boundPred=[-.30,-.10,-.02,0,.04,.10,.18,.28];
@@ -209,7 +213,7 @@ $('#coverage-table').innerHTML=`<table><thead><tr><th>Sampled rows</th><th>Uniqu
 function renderAmdahl(){const pp=Number($('#amdahl-p').value),s=Number($('#amdahl-s').value),p=pp/100,gain=1/((1-p)+p/s),cap=p===1?Infinity:1/(1-p);$('#amdahl-p-out').value=fmt(pp,3)+'%';$('#amdahl-s-out').value=fmt(s,1)+'×';$('#amdahl-output').innerHTML=metric(fmt(gain,4)+'×','Calculated whole-program throughput')+metric(fmt((1-1/gain)*100,4)+'%','Calculated complete-runtime reduction')+metric(Number.isFinite(cap)?fmt(cap,4)+'×':'Unbounded','Limit with an infinitely fast target kernel')+metric(fmt(100-pp,3)+'%','Unaffected fraction of original runtime');}
 $('#amdahl-p').addEventListener('input',renderAmdahl);$('#amdahl-s').addEventListener('input',renderAmdahl);$$('[data-amdahl]').forEach(b=>b.onclick=()=>{const vals={half:[50,2],billion:[.342,8],near:[95,8]}[b.dataset.amdahl];$('#amdahl-p').value=vals[0];$('#amdahl-s').value=vals[1];renderAmdahl();});renderAmdahl();
 $('#capstone-text').value=state.capstone||'';$('#capstone-text').addEventListener('input',e=>{state.capstone=e.target.value;save();});$('#capstone-check').onclick=()=>{const t=$('#capstone-text').value.toLowerCase(),checks=[['Recorded time and scale',/98[.,]2|98 seconds/.test(t)&&/billion|1b|1,000,000,000/.test(t)],['Sampled rows, not independent models',/sampl|independent/.test(t)],['Projected native denominator',/project|infer|linear/.test(t)&&/native|limen/.test(t)],['Assembly increment qualified',/assembly/.test(t)&&/noise|noisy|single|pair|limit|not establish|uncertain|small/.test(t)],['Reproducibility detail',/git|hash|commit|replay|frozen|snapshot/.test(t)]];$('#capstone-feedback').innerHTML='<p class="fine">Keyword checklist, not an automated fact-check or grade. Inspect your wording against the evidence and the example.</p><div class="capstone-checks">'+checks.map(([name,ok])=>`<div class="${ok?'found':'missing'}">${ok?'✓ Mention detected:':'○ Review:'} ${name}</div>`).join('')+'</div>';};
-function exportLearning(){let text='# Terasweep masterclass — personal learning record\n\nExported '+new Date().toISOString()+'\nCourse basis: benchmark-handoff-2026-09-24 / 2e549d4.\n\n';for(const c of DATA.chapters)text+=`## ${strip(c.title)}\n\nUnderstood: ${state.done.includes(c.id)?'yes':'not marked'}\n\n${state.notes[c.id]||'(No notes.)'}\n\n`;text+='## Capstone statement\n\n'+(state.capstone||'(Not written.)')+'\n';download('terasweep_learning_record.md',text,'text/markdown');}
+function exportLearning(){let text='# Terasweep performance learning — personal record\n\nExported '+new Date().toISOString()+'\nOriginal Ridge study: benchmark-handoff-2026-09-24 / 2e549d4. Matched sweep evidence: d5dd916.\n\n';for(const c of DATA.chapters)text+=`## ${strip(c.title)}\n\nUnderstood: ${state.done.includes(c.id)?'yes':'not marked'}\n\n${state.notes[c.id]||'(No notes.)'}\n\n`;text+='## Capstone statement\n\n'+(state.capstone||'(Not written.)')+'\n';download('terasweep_learning_record.md',text,'text/markdown');}
 $('#export-learning').addEventListener('click',exportLearning);$('#export-notes-top').addEventListener('click',exportLearning);
 const glossary={
  'Ablation':'An experiment that disables a reuse or execution layer while retaining the relevant input and output contract, so its contribution can be inspected.',
