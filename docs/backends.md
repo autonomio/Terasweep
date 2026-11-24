@@ -1,8 +1,10 @@
 # Backend setup
 
-`make build` builds one Rust executable. Ridge and DLinear have no external
-model backend. Use GNU Make and Rust 1.63 or newer on ARM64 macOS. The x86-64
-Linux build requires Rust 1.89 or newer.
+`cargo build --release --locked` builds the Rust library and executable.
+`make build` also provides the executable path used by the repository's Python
+CLI and MCP adapter. Ridge and DLinear have no external model backend. Use
+Rust and Cargo 1.63 or newer on ARM64 macOS. The x86-64 Linux build requires
+Rust and Cargo 1.89 or newer for its AVX-512 kernels.
 
 ## LightGBM
 

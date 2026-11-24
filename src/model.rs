@@ -177,9 +177,5 @@ fn positive(value: f64) -> bool {
 }
 
 fn valid_matrix(matrix: &Matrix) -> bool {
-    matrix.rows > 0
-        && matrix.cols > 0
-        && matrix.rows.checked_mul(matrix.cols) == Some(matrix.x.len())
-        && matrix.y.len() == matrix.rows
-        && matrix.x.iter().chain(&matrix.y).all(|x| x.is_finite())
+    matrix.has_shape() && matrix.x.iter().chain(&matrix.y).all(|x| x.is_finite())
 }

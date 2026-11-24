@@ -198,12 +198,12 @@ impl CommonSpace {
                 json_f64(signed_section, "min")?,
                 json_f64(signed_section, "max")?,
                 json_f64(signed_section, "step")?,
-            ),
+            )?,
             threshold_abs: grid_values(
                 json_f64(abs_section, "min")?,
                 json_f64(abs_section, "max")?,
                 json_f64(abs_section, "step")?,
-            ),
+            )?,
             fee_bps: json_f64_array(src, "fee_bps")?,
             slippage_bps: json_f64_array(src, "slippage_bps")?,
             rolling_window_bars: json_usize_optional(src, "rolling_window_bars")?.unwrap_or(96),
@@ -690,26 +690,37 @@ pub fn model_name(src: &str) -> Result<String, Box<dyn std::error::Error>> {
     Ok(json_string_optional(src, "model")?.unwrap_or_else(|| "ridge".to_string()))
 }
 
-pub fn logspace(log_min: f64, log_max: f64, count: usize) -> Vec<f64> {
-    if count == 1 {
-        return vec![10_f64.powf(log_min)];
+pub fn logspace(log_min: f64, log_max: f64, count: usize) -> Result<Vec<f64>, &'static str> {
+    if count == 0 {
+        return Err("alpha count must be positive");
     }
-    (0..count)
+    if count == 1 {
+        return Ok(vec![10_f64.powf(log_min)]);
+    }
+    Ok((0..count)
         .map(|idx| {
             let t = idx as f64 / (count - 1) as f64;
             10_f64.powf(log_min + (log_max - log_min) * t)
         })
-        .collect()
+        .collect())
 }
 
-pub fn grid_values(min: f64, max: f64, step: f64) -> Vec<f64> {
+pub fn grid_values(min: f64, max: f64, step: f64) -> Result<Vec<f64>, &'static str> {
+    let end = max + step * 0.5;
+    if !min.is_finite() || !end.is_finite() || min > max || step <= 0.0 {
+        return Err("threshold grid needs finite ordered bounds and a positive finite step");
+    }
     let mut values = Vec::new();
     let mut value = min;
-    while value <= max + step * 0.5 {
+    while value <= end {
         values.push(round_to(value, 12));
-        value += step;
+        let next = value + step;
+        if next <= value {
+            return Err("threshold step is too small to advance the grid");
+        }
+        value = next;
     }
-    values
+    Ok(values)
 }
 
 pub fn json_object<'a>(src: &'a str, key: &str) -> Result<&'a str, Box<dyn std::error::Error>> {
@@ -924,11 +935,10 @@ fn signal_active(pred: f64, threshold: f64, rule: SignalRule) -> bool {
 }
 
 pub fn write_summary_json(
-    path: &str,
+    mut out: impl Write,
     run: &RunOutput,
     hot_seconds: f64,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut out = fs::File::create(path)?;
+) -> std::io::Result<()> {
     let summary = &run.summary;
     writeln!(out, "{{")?;
     writeln!(out, "  \"rows\": {},", summary.rows())?;

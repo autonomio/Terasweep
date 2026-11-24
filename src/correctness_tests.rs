@@ -339,6 +339,36 @@ fn fixture_decoders_reject_truncation_and_size_overflow() {
     let parsed = read_prices(&price).unwrap();
     assert_eq!(parsed.open, [100.0]);
     assert_eq!(parsed.close, [105.0]);
+
+    let matrix = Matrix {
+        rows: 1,
+        cols: 1,
+        x: vec![1.0],
+        y: vec![1.0],
+    };
+    let misaligned = Prices {
+        open: parsed.open,
+        close: vec![],
+    };
+    let error = crate::sweep("{}", &matrix, &matrix, &misaligned, 1)
+        .err()
+        .unwrap();
+    assert_eq!(
+        error.to_string(),
+        "price rows (1 open, 0 close) != test rows 1"
+    );
+}
+
+#[test]
+fn sweep_grids_reject_empty_or_nonadvancing_ranges() {
+    use crate::results::{grid_values, logspace};
+
+    assert_eq!(grid_values(-0.25, 0.25, 0.25).unwrap(), [-0.25, 0.0, 0.25]);
+    assert!(grid_values(0.0, 1.0, 0.0).is_err());
+    assert!(grid_values(0.0, 1.0, -1.0).is_err());
+    assert!(grid_values(1.0, 0.0, 0.1).is_err());
+    assert!(grid_values(1e16, 1e16, 0.1).is_err());
+    assert!(logspace(0.0, 1.0, 0).is_err());
 }
 
 #[cfg(all(target_arch = "x86_64", target_os = "linux"))]

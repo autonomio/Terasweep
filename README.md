@@ -17,13 +17,23 @@ settings on prepared data with the same runner.
 
 ## Install
 
-From a checkout, use `make`, Rust, and Python 3.10 or newer. Build and test the
-local runner with the following commands.
+Cargo builds the `terasweep` library and CLI. Install the CLI from a checkout
+with `cargo install --path . --locked`, or build both with
+`cargo build --release --locked`. The library exposes `fit_predict` and
+`sweep` for prepared matrices.
+
+Use Make and Python 3.10 or newer for the repository examples and correctness
+suite.
 
 ```sh
 make build
 make test
 ```
+
+`make test` checks predictions to ten decimal places on the native reference
+cases, bit equality between scoring paths, the seeded trial order, and the
+CLI and MCP contracts. The quick live reference check covers all four models
+using the optional backends. [Correctness checks](docs/research/model-reference-parity.md#fast-checks)
 
 Ridge and DLinear run with Rust alone. LightGBM loads the official shared
 library when selected. TiDE uses the pinned Google Research model with a local

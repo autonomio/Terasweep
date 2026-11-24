@@ -1,0 +1,15 @@
+[package]
+name = "terasweep"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.63"
+description = "Factorized parameter sweeps and reference-checked model predictions"
+repository = "https://github.com/autonomio/Terasweep"
+readme = "README.md"
+publish = false
+include = ["/src/**", "/scripts/tide_backend.py", "/README.md"]
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"

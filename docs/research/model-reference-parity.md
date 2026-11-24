@@ -7,6 +7,21 @@ prediction at `rtol=1e-10` and `atol=1e-10`, and requires exact agreement on the
 on the tested host. For each model the audit checks identical scalar and compact
 summaries and prediction exports on the same ordered trials.
 
+## Fast checks
+
+`cargo test --locked` runs the Rust checks. `make test` also checks the CLI
+and MCP receipts and replays a 64-trial Ridge sweep across every scalar level.
+The Ridge and DLinear unit cases require an absolute prediction error of at
+most `5e-11`, equal values rounded to ten decimal places, and exact
+`prediction > 0` flags.
+Scoring checks use independently calculated cash flows, exact winner IDs and
+cache counts, and bitwise parity for available AVX-512 kernels. On a host
+with both kernels, use `TERASWEEP_REQUIRE_SIMD=1 make test` to require both.
+
+For a live comparison, use the environment below and pass `--quick` to the
+reference verifier. It checks the six retained Ridge fits, 18 DLinear fits,
+and one fit each for LightGBM and TiDE. The full audit checks all 1,480 fits.
+
 ## Reproduce
 
 ```sh
