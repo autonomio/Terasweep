@@ -10,14 +10,14 @@ This package contains the minimum surface needed to repeat the cached sampled sw
 - `src/results.rs`: scoring, price accounting, fees, slippage, and metrics.
 - `src/ridge.rs`: first model architecture.
 - `src/dlinear.rs`: closed-form DLinear architecture.
-- `src/lightgbm.rs`: native histogram GBDT architecture.
+- `src/lightgbm.rs`: official LightGBM regression through its native library.
 - `src/tide.rs`: minimal dense temporal encoder-decoder architecture.
 - `data/train.bin`: frozen training matrix and target.
 - `data/test.bin`: frozen test matrix and target.
 - `data/price.bin`: frozen open/close backtest prices.
 - `configs/sweep.json`: deterministic sampled sweep space.
 - `configs/dlinear.json`: deterministic DLinear sampled sweep space.
-- `configs/lightgbm.json`: deterministic LightGBM-style sampled sweep space.
+- `configs/lightgbm.json`: deterministic LightGBM regression sweep space.
 - `configs/tide.json`: deterministic TiDE sampled sweep space.
 - `golden/1m.json`: stable canonical 1M validation result.
 
@@ -42,9 +42,12 @@ Run DLinear on the same frozen data:
 make run RUNS=1000000 OUT=runs/dlinear-1m CONFIG=configs/dlinear.json
 ```
 
-Run LightGBM-style GBDT on the same frozen data:
+Run LightGBM regression on the same frozen data. Install the official LightGBM
+4.6.0 package and point the Rust binary at its shared library.
 
 ```sh
+python -m pip install 'lightgbm==4.6.0'
+export TERASWEEP_LIGHTGBM_LIB="$(python -c 'from lightgbm.basic import _LIB; print(_LIB._name)')"
 make run RUNS=1000000 OUT=runs/lightgbm-1m CONFIG=configs/lightgbm.json
 ```
 
@@ -67,3 +70,8 @@ The runner writes `summary.json` and `time.txt` under the selected run directory
 See [Ridge execution levels](docs/optimization-pipeline.md) for compact caching,
 Rust AVX-512 intrinsics, handwritten assembly, validation, and exact-plan replay.
 `make` now preserves the historical executable and builds `target/terasweep-funnel`.
+
+## Model reference parity
+
+See [Model reference parity](docs/model-reference-parity.md) for the replay
+command, the tested input contracts, and the status of each model.

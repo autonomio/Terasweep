@@ -97,6 +97,22 @@ pub fn run(
         summary.record(row);
     }
 
+    results::export_predictions(train_cache.iter().map(|fit| {
+        let config = fit.config;
+        (
+            format!(
+                "{{\"alpha\": {}, \"fit_intercept\": {}, \"solver_eps\": {}, \"lookback\": {}, \"kernel\": {}}}",
+                results::json_float(config.alpha),
+                config.fit_intercept,
+                results::json_float(config.solver_eps),
+                config.lookback,
+                config.kernel,
+            ),
+            fit.fit_failed,
+            fit.preds.as_slice(),
+        )
+    }))?;
+
     let best_return_json = row_json(
         summary.best_return(),
         &model,
