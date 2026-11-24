@@ -291,6 +291,10 @@
       "passed": true
     },
     {
+      "check": "Pinned source uses the public repository",
+      "passed": true
+    },
+    {
       "check": "Escape closes evidence modal",
       "passed": true
     },
@@ -300,6 +304,10 @@
     },
     {
       "check": "Search result navigates and closes dialog",
+      "passed": true
+    },
+    {
+      "check": "Search includes refreshed lesson text",
       "passed": true
     },
     {
@@ -441,8 +449,8 @@
       "detail": []
     }
   ],
-  "passed": 79,
-  "total": 79,
+  "passed": 81,
+  "total": 81,
   "limitations": [
     "The opaque origin exercises in-session notes and the no-storage fallback. Persistent localStorage across browser restarts is outside this check.",
     "Browser checks exercise the learning application using retained benchmark evidence."

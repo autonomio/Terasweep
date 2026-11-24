@@ -8,6 +8,10 @@ const levels=['original','bounds','compact','intrinsics','assembly'];
 const labels={limen:'Native Limen CLI / UEL',naive:'Rust · no cross-trial reuse',stats:'+ Shared Gram statistics',train:'+ Fitted predictions',score:'+ Original score cache',original:'Original factorized Rust',bounds:'+ Constant-signal shortcut',compact:'+ Compact scoring cache',intrinsics:'+ Rust AVX-512 intrinsics',assembly:'+ Handwritten AVX-512'};
 const colors={original:'var(--off)',bounds:'var(--gold)',compact:'var(--blue)',intrinsics:'var(--green)',assembly:'var(--purple)',limen:'var(--gold)',naive:'var(--off)',stats:'var(--blue)',train:'var(--green)',score:'var(--purple)'};
 const storageKey='terasweep-masterclass-v1';
+for(const source of Object.values(DATA.sources)){
+ source.url=source.url.replace('https://github.com/mikkokotila/Terasweep','https://github.com/autonomio/Terasweep');
+ source.note=source.note.replace('when this teaching experience was prepared. The learning page is an additive layer, not a new performance experiment.','when the original learning page was prepared.');
+}
 let storageOK=true,state={chapter:'brief',done:[],notes:{},quiz:{},claims:{},theme:'dark',capstone:''};
 try{let old=JSON.parse(localStorage.getItem(storageKey)||'null');if(old&&typeof old==='object')state={...state,...old};}catch(e){storageOK=false;}
 state.done=Array.isArray(state.done)?state.done:[];state.notes=state.notes||{};state.quiz=state.quiz||{};state.claims=state.claims||{};
@@ -69,7 +73,7 @@ function openSource(id,lines=''){openDialog('evidence');selectSource(id,lines);}
 $('#source-search').addEventListener('input',renderSourceList);
 $('#source-export').addEventListener('click',()=>{const s=DATA.sources[currentSource];if(s)download(s.path.split('/').pop(),s.text);});
 $('#course-search').addEventListener('input',renderSearch);
-function renderSearch(){const q=$('#course-search').value.toLowerCase();const match=DATA.chapters.filter(c=>(strip(c.title+' '+c.lead+' '+c.body)).toLowerCase().includes(q));$('#search-results').innerHTML=match.map(c=>`<button class="search-result" data-go="${c.id}"><b>${strip(c.title)}</b><span>${esc(c.lead)}</span></button>`).join('')||'<p>No lesson matches that phrase.</p>';}
+function renderSearch(){const q=$('#course-search').value.toLowerCase();const match=DATA.chapters.filter(c=>$(`#${c.id}`).textContent.toLowerCase().includes(q));$('#search-results').innerHTML=match.map(c=>`<button class="search-result" data-go="${c.id}"><b>${strip(c.title)}</b><span>${esc($(`#${c.id} .lead`).textContent)}</span></button>`).join('')||'<p>No lesson matches that phrase.</p>';}
 for(const q of $$('.checkpoint')){
  const id=q.closest('.lesson').id,explanation=$('.quiz-feedback',q).textContent;
  function answer(n){const correct=Number(q.dataset.correct);$$('[data-choice]',q).forEach(b=>{b.classList.toggle('correct',Number(b.dataset.choice)===correct);b.classList.toggle('incorrect',Number(b.dataset.choice)===n&&n!==correct);});const p=$('.quiz-feedback',q);p.hidden=false;p.textContent=(n===correct?'Yes. ':'Not quite. ')+explanation;state.quiz[id]=n;save();}

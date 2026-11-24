@@ -34,7 +34,9 @@ def main() -> None:
     receipt_bytes = (course_root.parents[1] / receipt["path"]).read_bytes()
     assert hashlib.sha256(receipt_bytes).hexdigest() == receipt["sha256"], "Matched receipt changed"
     models = json.loads(receipt_bytes)["models"]
-    scale = next(chapter["body"] for chapter in data["chapters"] if chapter["id"] == "scale")
+    table = re.search(r'<table id="matched-sweep-table">.*?</table>', text, re.S)
+    assert table, "Missing matched sweep table"
+    scale = table.group()
     assert set(re.findall(r'<tr data-model="([^"]+)">', scale)) == models.keys()
     for model, record in models.items():
         measured = next(
