@@ -33,10 +33,11 @@ verify: build
 	$(MAKE) --no-print-directory run RUNS=1000000 OUT=$$out && \
 	python3 scripts/compare_golden.py golden/1m.json $$out/summary.json
 
-test:
+test: build
 	mkdir -p target
 	$(RUSTC) --test src/sweep.rs --edition=2021 -O -C target-cpu=native -o target/terasweep-tests
 	./target/terasweep-tests --nocapture
+	python3 -B tests/test_model_run.py
 
 clean:
 	rm -f $(BIN) target/terasweep-tests

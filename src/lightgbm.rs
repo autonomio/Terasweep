@@ -222,6 +222,19 @@ impl ModelSpace {
     }
 }
 
+pub(crate) fn fit_one(
+    train: &Matrix,
+    test: &Matrix,
+    config: TrainConfig,
+    seed: u64,
+) -> Result<crate::FitPrediction, Box<dyn std::error::Error>> {
+    let reference = LightGbm::load()?;
+    crate::model::measure(|| {
+        let labels: Vec<f32> = train.y.iter().map(|&value| value as f32).collect();
+        reference.fit_predict(train, &labels, test, config, seed)
+    })
+}
+
 fn precompute_train_cache(
     train: &Matrix,
     test: &Matrix,

@@ -6,6 +6,8 @@ import json
 import os
 from pathlib import Path
 import sys
+import struct
+from time import perf_counter
 
 
 import numpy as np
@@ -58,6 +60,7 @@ def main():
     output = sys.stdout.buffer
     for lookback, width, rate, epochs in configs:
         tf.keras.backend.clear_session()
+        started = perf_counter()
         tf.keras.utils.set_random_seed(seed)
         model = model_type(
             {
@@ -76,8 +79,10 @@ def main():
         for _ in range(epochs):
             model.train_step(past, future, target, ids, optimizer)
         predictions = model(inputs(test_x, lookback), training=False).numpy()
+        elapsed = perf_counter() - started
         if predictions.shape != (test_rows, 1) or not np.isfinite(predictions).all():
             raise ValueError("TiDE returned invalid predictions")
+        output.write(struct.pack("<d", elapsed))
         output.write(predictions.astype("<f8").tobytes())
 
 

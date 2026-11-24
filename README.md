@@ -1,82 +1,56 @@
 # Terasweep
 
-Rust runner for factorized model sweeps. The CLI reads prepared matrices, fits each
-unique training configuration, and reuses predictions and scores across trials.
+Fit one model and compare its predictions with an upstream numerical reference.
+Terasweep supports Ridge, DLinear, LightGBM regression, and TiDE. The CLI and
+agent interface take the same model settings and matrix files and return the
+same JSON receipt.
 
-The repository includes the following runtime inputs and model implementations.
+[Install](#install) · [Run a model](#run-a-model) · [Model cards](#model-cards) ·
+[Agent interface](docs/agents.md) · [Single-run comparison](benchmarks/single-model/README.md)
 
-- `src/sweep.rs`: orchestration, config, sampling, and summary output.
-- `src/results.rs`: scoring, price accounting, fees, slippage, and metrics.
-- `src/ridge.rs`: first model architecture.
-- `src/dlinear.rs`: closed-form DLinear architecture.
-- `src/lightgbm.rs`: official LightGBM regression through its native library.
-- `src/tide.rs`: Google Research TiDE on one-step return windows.
-- `data/train.bin`: frozen training matrix and target.
-- `data/test.bin`: frozen test matrix and target.
-- `data/price.bin`: frozen open/close backtest prices.
-- `configs/sweep.json`: deterministic sampled sweep space.
-- `configs/dlinear.json`: deterministic DLinear sampled sweep space.
-- `configs/lightgbm.json`: deterministic LightGBM regression sweep space.
-- `configs/tide.json`: deterministic TiDE sampled sweep space.
-- `golden/1m.json`: stable canonical 1M validation result.
+## Install
 
-Build and smoke test:
+From a checkout, use `make`, Rust, and Python 3.10 or newer. Build and test the
+local runner with the following commands.
 
 ```sh
-make smoke
+make build
+make test
 ```
 
-Run a larger sweep:
+Ridge and DLinear run with Rust alone. LightGBM loads the official shared
+library when selected. TiDE uses the pinned Google Research model with a local
+TensorFlow environment. [Backend setup](docs/backends.md)
+
+## Run a model
+
+Run an example using the bundled Ridge matrices. The receipt includes the model
+settings, input dimensions and SHA-256 hashes, full prediction vector, and fit
+and predict time.
 
 ```sh
-make run RUNS=1000000 OUT=runs/1m
-make run RUNS=10000000 OUT=runs/10m
-make run RUNS=100000000 OUT=runs/100m
-make run RUNS=1000000000 OUT=runs/1b
+python3 scripts/model_run.py fit docs/examples/ridge.json
 ```
 
-Prepare one-step return matrices for DLinear and TiDE from the retained market
-fixture. Install NumPy and Polars in the Python environment first.
+Use `python3 scripts/model_run.py schema` to inspect valid model parameters and
+the receipt schema. The same request can be sent to the `terasweep_fit` tool
+through the local stdio MCP server. [Agent interface](docs/agents.md)
 
-```sh
-python scripts/prepare_return_inputs.py runs/return-inputs
-returns=runs/return-inputs
-make run RUNS=1000000 OUT=runs/dlinear-1m CONFIG=configs/dlinear.json \
-  TRAIN="$returns/train.bin" TEST="$returns/test.bin" PRICE="$returns/price.bin"
-```
+## Model cards
 
-Run LightGBM regression on the same frozen data. Install the official LightGBM
-4.6.0 package and point the Rust binary at its shared library.
+| Model | Input | Reference |
+| --- | --- | --- |
+| [Ridge](docs/models/ridge.md) | Prepared features and a continuous target | Limen Ridge with scikit-learn Cholesky |
+| [DLinear](docs/models/dlinear.md) | One observed return channel and a next-return target | Limen DLinear with NumPy SVD |
+| [LightGBM](docs/models/lightgbm.md) | Prepared features and a continuous target | Official Python LightGBM regression |
+| [TiDE](docs/models/tide.md) | One observed return channel and a next-return target | Google Research TiDE |
 
-```sh
-python -m pip install 'lightgbm==4.6.0'
-export TERASWEEP_LIGHTGBM_LIB="$(python -c 'from lightgbm.basic import _LIB; print(_LIB._name)')"
-make run RUNS=1000000 OUT=runs/lightgbm-1m CONFIG=configs/lightgbm.json
-```
+Each card gives the exact measured input, output, parity result, and single-run
+speed ratio. The comparison includes external alternatives on the same payload.
+[Comparison table and reproduction](benchmarks/single-model/README.md)
 
-Run TiDE with the return matrices prepared above and the pinned Google Research
-model. The reference setup is documented in [Model reference parity](docs/model-reference-parity.md).
+## Research and teaching
 
-```sh
-make run RUNS=1000000 OUT=runs/tide-1m CONFIG=configs/tide.json \
-  TRAIN="$returns/train.bin" TEST="$returns/test.bin" PRICE="$returns/price.bin"
-```
-
-Golden validation:
-
-```sh
-make verify
-```
-
-The runner writes `summary.json` and `time.txt` under the selected run directory.
-
-## Execution-level comparison
-
-See [Ridge execution levels](docs/optimization-pipeline.md) for compact caching,
-Rust AVX-512 intrinsics, handwritten assembly, validation, and exact-plan replay.
-`make` now preserves the historical executable and builds `target/terasweep-funnel`.
-
-## Model reference parity
-
-See [Model reference parity](docs/model-reference-parity.md) for the replay
-command, the tested input contracts, and the status of each model.
+The [benchmark record](benchmarks/README.md) and [research notes](docs/research/)
+preserve the existing sweep experiments and reference checks. The interactive
+[performance masterclass](docs/masterclass/) is an offline teaching artifact.
