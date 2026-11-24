@@ -92,6 +92,13 @@ with sync_playwright() as p:
  page.locator('[data-open=evidence]').first.click();page.evaluate("selectSource('asm-source')");page.screenshot(path=str(BUILD/'mobile-evidence.png'));page.keyboard.press('Escape')
  check('No browser JavaScript errors throughout',not errors,errors)
  check('No external requests while using the application',not requests,requests)
+ fallback = b.new_page(viewport={'width': 1440, 'height': 1100}, java_script_enabled=False)
+ fallback.set_content((ROOT/'index.html').read_text(), wait_until='load')
+ reading = fallback.locator('#main').bounding_box()
+ navigation = fallback.locator('#sidebar').bounding_box()
+ check('Desktop reading column with JavaScript disabled',
+       fallback.locator('.lesson:visible').count() == 13 and
+       reading['x'] > navigation['x'] and reading['width'] > navigation['width'])
  b.close()
 report={'status':'PASS' if all(c['passed'] for c in checks) else 'FAIL','browser':'Chromium via Playwright','rendering_method':'set_content in an opaque origin with the self-contained page','desktop_viewport':[1440,1100],'mobile_viewport':[390,844],'checks':checks,'passed':sum(c['passed'] for c in checks),'total':len(checks),'limitations':['The opaque origin exercises in-session notes and the no-storage fallback. Persistent localStorage across browser restarts is outside this check.','Browser checks exercise the learning application using retained benchmark evidence.']}
 (ROOT/'qa-report.json').write_text(json.dumps(report,indent=2)+'\n')

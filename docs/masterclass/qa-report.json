@@ -447,10 +447,14 @@
       "check": "No external requests while using the application",
       "passed": true,
       "detail": []
+    },
+    {
+      "check": "Desktop reading column with JavaScript disabled",
+      "passed": true
     }
   ],
-  "passed": 81,
-  "total": 81,
+  "passed": 82,
+  "total": 82,
   "limitations": [
     "The opaque origin exercises in-session notes and the no-storage fallback. Persistent localStorage across browser restarts is outside this check.",
     "Browser checks exercise the learning application using retained benchmark evidence."
