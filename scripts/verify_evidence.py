@@ -2,6 +2,7 @@
 """Verify the Git handoff without extracting archives or rerunning benchmarks."""
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 from pathlib import Path, PurePosixPath
@@ -113,6 +114,10 @@ def verify_archive(path: Path) -> tuple[dict[str, str], int]:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--check-current-source', action='store_true',
+                        help='also require the checkout to match the measured source')
+    args = parser.parse_args()
     expected = parse_sums(MANIFEST.read_text(encoding='utf-8'))
     actual_files = {
         str(p.relative_to(ROOT)) for p in (ROOT / 'benchmarks').rglob('*')
@@ -124,9 +129,6 @@ def main() -> None:
         require_equal(hash_file(ROOT / rel, scan=not rel.endswith('.tar.gz')), digest, rel)
     print(f'Handoff files OK: {len(expected)} checksums')
     source = json.loads((ROOT / 'benchmarks/handoff/pipeline-source-sha256.json').read_text())
-    for rel, digest in source.items():
-        require_equal(hash_file(ROOT / safe_path(rel)), digest, rel)
-    print(f'Measured pipeline source OK: {len(source)} files')
     archive_hashes = {}
     member_count = embedded_count = 0
     for path in sorted((ROOT / 'benchmarks').rglob('*.tar.gz')):
@@ -134,6 +136,13 @@ def main() -> None:
         archive_hashes[path.name] = hashes
         member_count += len(hashes)
         embedded_count += checked
+    measured = archive_hashes['terasweep_rust_pipeline.tar.gz']
+    for rel, digest in source.items():
+        member = str(PurePosixPath('Terasweep') / safe_path(rel))
+        require_equal(measured.get(member, ''), digest, member)
+        if args.check_current_source:
+            require_equal(hash_file(ROOT / safe_path(rel)), digest, rel)
+    print(f'Measured pipeline source OK: {len(source)} archived files')
     history = json.loads((ROOT / 'benchmarks/mac-history/inventory.json').read_text())
     for entry in history['files']:
         archive = Path(entry['archive']).name

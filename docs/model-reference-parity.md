@@ -36,3 +36,7 @@ classifier. [Ridge experiment](../benchmarks/reports/terasweep_reverse_funnel_re
 
 The tolerance applies to the recorded inputs and parameter cases. Backtest
 accounting and performance require separate matched comparisons.
+
+The benchmark evidence verifier checks the measured source against its
+preserved archive. Use `scripts/verify_evidence.py --check-current-source`
+with Python to also require the current checkout to match that source.
