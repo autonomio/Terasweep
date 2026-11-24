@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import struct
 import subprocess
@@ -8,11 +9,12 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOL = ROOT / "scripts/model_run.py"
+BINARY = os.environ.get("TERASWEEP_TEST_BINARY", str(ROOT / "target/terasweep-funnel"))
 
 
 def invoke(*args, input=None):
     return subprocess.run(
-        [sys.executable, "-B", TOOL, *args],
+        [sys.executable, "-B", TOOL, "--binary", BINARY, *args],
         input=input,
         text=True,
         capture_output=True,
