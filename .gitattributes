@@ -1,3 +1,5 @@
 # Preserve immutable evidence and frozen matrix bytes on every platform.
 benchmarks/** -text
 data/*.bin -text
+# Review the lesson source and rebuild the self-contained download.
+docs/masterclass/index.html -diff linguist-generated=true

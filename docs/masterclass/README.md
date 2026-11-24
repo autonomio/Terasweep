@@ -67,8 +67,9 @@ python3 source/build.py
 python3 verify.py
 ```
 
-`source/` contains the application, styles, template, and lesson payload.
-The build reads the matched sweep receipt and embeds its billion-trial rows.
+`source/` contains the application, styles, template, original lesson payload,
+and the current lesson updates. The build reads the matched sweep receipt and
+embeds its billion-trial rows.
 [Source manifest](source-manifest.json) records the evidence identities.
 [Browser QA](qa-report.json) covers every chapter at desktop and mobile widths,
 the matched sweep table, the original charts, labs, glossary, notes, and exports.

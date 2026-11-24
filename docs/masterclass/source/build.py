@@ -4,6 +4,29 @@ import json
 from pathlib import Path
 S=Path(__file__).resolve().parent
 D=json.loads((S/'course-data.json').read_text(encoding='utf-8'))
+updates = json.loads((S / 'lesson-updates.json').read_text(encoding='utf-8'))
+old_repository = 'https://github.com/mikkokotila/Terasweep'
+repository = 'https://github.com/autonomio/Terasweep'
+for chapter in D['chapters']:
+    update = updates.get(chapter['id'], {})
+    chapter['lead'] = update.get('lead', chapter['lead'])
+    body = (
+        chapter['body'].replace(old_repository, repository)
+        .replace('TEACHING LAB', 'ILLUSTRATIVE LAB')
+        .replace('TEACHING FIXTURE', 'ILLUSTRATIVE FIXTURE')
+    )
+    for before, after in update.get('replace', {}).items():
+        if body.count(before) != 1:
+            raise ValueError(f'Lesson update needs exactly one match in {chapter["id"]}: {before!r}')
+        body = body.replace(before, after)
+    chapter['body'] = update.get('prepend', '') + body
+for source in D['sources'].values():
+    source['url'] = source['url'].replace(old_repository, repository)
+    source['note'] = source['note'].replace(
+        'when this teaching experience was prepared. The learning page is an additive layer, not a new performance experiment.',
+        'when the original learning page was prepared.',
+    )
+
 receipt = S.parents[2] / 'benchmarks/sweep-scaling/results-m1-max.json'
 models = json.loads(receipt.read_text(encoding='utf-8'))['models']
 cards = {'ridge': 'Ridge', 'dlinear': 'DLinear', 'lightgbm': 'LightGBM', 'tide': 'TiDE'}
