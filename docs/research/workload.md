@@ -1,6 +1,9 @@
-# Workload
+# Retained sweep inputs
 
-Frozen Limen-prepared BTCUSDT ridge sweep input.
+## Ridge and LightGBM matrices
+
+Frozen Limen-prepared BTCUSDT inputs used by the original Ridge sweep and the
+bundled LightGBM configuration.
 
 - Source: `HistoricalData.get_spot_klines(kline_size=900, row_count_limit=6000)`.
 - Raw rows: 6000 15-minute bars.
@@ -13,14 +16,25 @@ Frozen Limen-prepared BTCUSDT ridge sweep input.
 - Backtest window: `2026-05-03 03:45:00+00:00` to `2026-05-14 23:30:00+00:00`.
 - Target: `NextReturnTarget(periods=1, scale=100.0)`.
 - Ridge model: sampled `alpha`, `fit_intercept`, and `solver_eps`.
-- DLinear uses single-channel return input, a fitted intercept, and sampled `alpha`, `solver_eps`, `lookback`, and `kernel`.
 - LightGBM regression: sampled `learning_rate`, `num_trees`, `num_leaves`, `max_bins`, `lambda_l2`, and `min_data_in_leaf`.
-- Score knobs: `signal_rule`, `threshold`, `fee_bps`, `slippage_bps`.
-- Run count is supplied by `RUNS`; `configs/sweep.json` defines the fixed search space.
-- Output rounding is fixed: MAE `3`, signal rate `3`, return `1`, Sharpe `2`.
 
-The frozen binaries are intentionally included so the sweep can be repeated without re-fetching or re-preparing Limen data.
+The frozen binaries let the sweep run without fetching and preparing the Limen
+data again.
 
-DLinear and TiDE use separate single-channel matrices of observed and next-bar
-returns in percentage points. The preparation and reference checks are documented
-in [Model reference parity](model-reference-parity.md).
+## DLinear and TiDE return series
+
+Both use a single observed return column and a next-bar return target in
+percentage points. DLinear fits an intercept and samples `alpha`, `solver_eps`,
+`lookback`, and `kernel`. TiDE samples `lookback`, `hidden_width`,
+`learning_rate`, and `epochs`. [Input preparation](../backends.md#return-inputs)
+
+## Shared scoring
+
+The model's [sweep configuration](../../configs/) defines the search space,
+including `signal_rule`, `threshold`, `fee_bps`, and `slippage_bps`. `RUNS`
+supplies the trial count. Outputs are rounded to 3 decimals for MAE and signal
+rate, 1 for return, and 2 for Sharpe.
+
+The [matched sweep benchmark](../../benchmarks/sweep-scaling/README.md) slices
+these inputs to 256 training and 128 test rows per model and records the exact
+fixture hashes and grids.

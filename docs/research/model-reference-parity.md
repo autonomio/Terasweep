@@ -54,8 +54,9 @@ scalar and compact scoring. [Ridge experiment](../../benchmarks/reports/teraswee
 All models share `train`, `score`, `bounds`, `compact`, `intrinsics` and
 `assembly` scoring levels. The `naive` and `stats` training controls currently
 require Ridge. The model checks above cover the recorded inputs and fit settings.
-Backtest equivalence against Limen and comparative performance require their own
-matched measurements.
+The [matched sweep benchmark](../../benchmarks/sweep-scaling/README.md) compares
+timings and winners on Terasweep's scorer. Native Limen uses its own backtest
+accounting, which is outside that comparison.
 
 The benchmark evidence verifier checks the measured source against its preserved
 archive. Run `python3 scripts/verify_evidence.py --check-current-source` to also
