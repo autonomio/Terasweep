@@ -1,12 +1,28 @@
 #!/usr/bin/env python3
-"""Build the single-file masterclass. Standard library only; no network calls."""
+"""Build the self-contained performance learning page from repository evidence."""
 import json
 from pathlib import Path
 S=Path(__file__).resolve().parent
 D=json.loads((S/'course-data.json').read_text(encoding='utf-8'))
+receipt = S.parents[2] / 'benchmarks/sweep-scaling/results-m1-max.json'
+models = json.loads(receipt.read_text(encoding='utf-8'))['models']
+cards = {'ridge': 'Ridge', 'dlinear': 'DLinear', 'lightgbm': 'LightGBM', 'tide': 'TiDE'}
+rows = []
+for name, label in cards.items():
+    result = models[name]
+    billion = next(row for row in result['scaling'] if row['trials'] == 1_000_000_000)
+    measured = billion['terasweep']
+    rows.append(
+        f'<tr data-model="{name}"><th scope="row"><a href="https://github.com/autonomio/Terasweep/blob/main/docs/models/{name}.md#sweep-scaling">{label}</a></th>'
+        f'<td>{measured["seconds"]:.2f} s</td><td>{measured["unique_training_configs"]:,}</td>'
+        f'<td>{measured["score_cache_entries"]:,}</td><td>{result["projection_anchor_trials"]:,}</td></tr>'
+    )
+scale = next(chapter for chapter in D['chapters'] if chapter['id'] == 'scale')
+scale['body'] = scale['body'].replace('@@MATCHED_SWEEP_ROWS@@', ''.join(rows))
+
 labels=['The investigation','Protect the reference','Factor the model','Factor the sweep',
         'Factor the scorer','Follow the profile','Redesign the cache','Choose the SIMD axis',
-        'Write the instructions','Prove the claim','The reverse funnel','Scale to one billion','Reproduce & teach']
+        'Write the instructions','Prove the claim','The reverse funnel','Scale to one billion','Reproduce the results']
 nav=[];group=None
 for i,c in enumerate(D['chapters']):
     if group!=c['group']:

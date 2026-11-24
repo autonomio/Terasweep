@@ -9,6 +9,8 @@ are historical snapshots, not alternate installed implementations.
 
 | Record | What it contains |
 |---|---|
+| [Matched sweeps](sweep-scaling/README.md) | Reference measurements, parity checks, and Terasweep timings from 10 through one billion sampled trials for each of the four models. |
+| [Single-model comparison](single-model/README.md) | Fit and prediction checks and timings against each model's reference. |
 | [Scaling report](reports/terasweep_scaling_report.md) | Actual Rust runs at 100k, 1m, 10m, 100m and 1b permutations; native reference projections and their limitations. |
 | [Scaling CSV](reports/terasweep_scaling_results.csv) / [JSON](reports/terasweep_scaling_results.json) | Machine-readable scaling measurements and calibrations. |
 | [Reverse-funnel report](reports/terasweep_reverse_funnel_report.md) | Integrated Rust factorization, cache, intrinsics, and handwritten-assembly comparisons. |
@@ -33,7 +35,7 @@ uses Rust intrinsics and handwritten assembly, not a C scoring kernel.
 |---|---|
 | [Scaling experiment](archives/terasweep_scaling_experiment.tar.gz) | Final source snapshots, frozen inputs, all 25 large Rust runs, native calibrations, validation, plots, and replay scripts. |
 | [Reverse-funnel experiment](archives/terasweep_reverse_funnel_experiment.tar.gz) | Original and integrated Rust sources, native artifacts, raw timing repetitions, checksums, disassembly, and replay scripts. |
-| [Final standalone pipeline](archives/terasweep_rust_pipeline.tar.gz) | Exact delivered source snapshot, matching the current runtime source manifest. |
+| [Final standalone pipeline](archives/terasweep_rust_pipeline.tar.gz) | Exact runtime source for the original integrated experiment, pinned by the handoff manifest. |
 | [Intrinsics exploration](archives/avx512_kernel_experiment.tar.gz) | Historical C reference/intrinsics sources, inputs, measurements and disassembly. |
 | [Handwritten exploration](archives/handwritten_avx512_experiment.tar.gz) | Authored assembly, comparison implementations, validation, and timing records. |
 | [Original uploaded inputs](archives/inputs.tar.gz) | Original Terasweep source/data and the early bounds-shortcut prototype. |

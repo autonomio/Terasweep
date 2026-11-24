@@ -28,6 +28,26 @@ def main() -> None:
         assert digest == src["sha256"], f"Embedded source changed: {key}"
     for ref in re.findall(r'data-source="([^"]+)"', text.split('<script type="application/json"')[0]):
         assert ref in data["sources"], f"Unresolved source button: {ref}"
+    course_root = Path(__file__).resolve().parent
+    manifest = json.loads((course_root / "source-manifest.json").read_text())
+    receipt = manifest["matched_sweep_receipt"]
+    receipt_bytes = (course_root.parents[1] / receipt["path"]).read_bytes()
+    assert hashlib.sha256(receipt_bytes).hexdigest() == receipt["sha256"], "Matched receipt changed"
+    models = json.loads(receipt_bytes)["models"]
+    scale = next(chapter["body"] for chapter in data["chapters"] if chapter["id"] == "scale")
+    assert set(re.findall(r'<tr data-model="([^"]+)">', scale)) == models.keys()
+    for model, record in models.items():
+        measured = next(
+            row["terasweep"] for row in record["scaling"] if row["trials"] == 1_000_000_000
+        )
+        cells = (
+            f'<td>{measured["seconds"]:.2f} s</td>'
+            f'<td>{measured["unique_training_configs"]:,}</td>'
+            f'<td>{measured["score_cache_entries"]:,}</td>'
+            f'<td>{record["projection_anchor_trials"]:,}</td>'
+        )
+        row = re.search(rf'<tr data-model="{model}">.*?</tr>', scale)
+        assert row and cells in row.group(), f"Wrong matched sweep data: {model}"
     rows = data["scaling"]["rows"]
     assert len(rows) == 25
     assert len({(r["n"], r["level"]) for r in rows}) == 25
@@ -44,6 +64,7 @@ def main() -> None:
     assert not re.search(r'<link[^>]+rel=["\']stylesheet', text), "External CSS dependency"
     assert not re.search(r'\bfetch\s*\(', text.split('</script><script>')[-1]), "Unexpected runtime fetch"
     print(json.dumps({"status":"PASS", "chapters":13,"embedded_sources":len(data["sources"]),
+                      "matched_model_sweeps":len(models),
                       "recorded_scaling_rows":25,"recorded_sample_evaluations":5_555_500_000,
                       "new_benchmarks_run":False,"html_sha256":hashlib.sha256(args.html.read_bytes()).hexdigest()},indent=2))
 

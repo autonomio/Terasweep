@@ -1,9 +1,11 @@
-# Ridge execution levels
+# Sweep execution levels
 
 The runner now includes scalar factorization controls, compact scoring caches,
 Rust AVX-512 intrinsics, and an authored assembly kernel. The ridge mathematics,
 original deterministic sampler, cost formulas, rounding, and original-order
-winner selection are retained. Other model modules are unchanged.
+winner selection are retained. Ridge supports every level below. DLinear,
+LightGBM, and TiDE support `train`, `score`, `bounds`, `compact`, `intrinsics`,
+and `assembly` with the same scoring pipeline. [Backend setup](../backends.md)
 
 ## Build and execute
 
@@ -84,7 +86,7 @@ The original summary timing fields are unchanged. Additional `PHASE` and
 Whole-process timings, not a sum of mismatched phase medians, define end-to-end
 speedup. Plan, mixed-score, and cost/reduction subphase timers exclude model prep.
 
-## Replaying an exact native parameter plan
+## Replaying an exact Ridge parameter plan
 
 The optional `TERASWEEP_PLAN` environment variable names a CSV with this header:
 
@@ -107,7 +109,11 @@ Limen or replaces its native Ridge implementation.
 The full native Limen workflow re-prepares raw data, fits sklearn Ridge, computes
 its current native metrics, and writes complete round artifacts. Terasweep starts
 from frozen prepared matrices and writes its existing smaller summary. Their
-backtest mechanics differ. Native-relative ratios therefore describe these
-application pipelines, not an isolated language/solver gain or proven economic
-parity. Only the within-Rust stages and the original-million-row controls preserve
-the same Rust calculation/output contract (cache cardinality differs in ablations).
+backtest mechanics differ. Native-relative ratios in the historical Ridge
+studies describe those application pipelines. The within-Rust stage comparisons
+hold the Rust calculation and output contract fixed.
+
+The [matched four-model benchmark](../../benchmarks/sweep-scaling/README.md)
+uses the same scalar scorer, trial order, and prepared data for the uncached
+reference and the Terasweep sweep. Its timings use the benchmark's own
+prepared-input boundary.

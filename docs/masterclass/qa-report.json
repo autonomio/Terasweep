@@ -1,7 +1,7 @@
 {
   "status": "PASS",
   "browser": "Chromium via Playwright",
-  "rendering_method": "set_content; local file/http URL navigation is restricted in this QA environment",
+  "rendering_method": "set_content in an opaque origin with the self-contained page",
   "desktop_viewport": [
     1440,
     1100
@@ -126,6 +126,18 @@
     },
     {
       "check": "All source references resolve",
+      "passed": true
+    },
+    {
+      "check": "Introduction opens the scaling chapter",
+      "passed": true
+    },
+    {
+      "check": "Matched scaling table shows all four models",
+      "passed": true
+    },
+    {
+      "check": "Matched table and historical explorer are both available",
       "passed": true
     },
     {
@@ -429,10 +441,10 @@
       "detail": []
     }
   ],
-  "passed": 76,
-  "total": 76,
+  "passed": 79,
+  "total": 79,
   "limitations": [
-    "Persistent localStorage across browser restarts was not tested because the QA page has an opaque origin. The no-storage fallback and in-session notes were exercised.",
-    "No new benchmark was executed; this QA tests the learning application."
+    "The opaque origin exercises in-session notes and the no-storage fallback. Persistent localStorage across browser restarts is outside this check.",
+    "Browser checks exercise the learning application using retained benchmark evidence."
   ]
 }
