@@ -4,11 +4,11 @@
   "rolling_window_bars": 96,
   "bar_minutes": 15,
   "alphas": {
-    "log_min": -8,
-    "log_max": 8,
-    "count": 128
+    "log_min": 0,
+    "log_max": 2,
+    "count": 3
   },
-  "fit_intercept": [true, false],
+  "fit_intercept": [true],
   "solver_eps": [1e-14],
   "lookbacks": [1, 2, 3],
   "kernels": [1, 3],

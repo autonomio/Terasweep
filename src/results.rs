@@ -762,20 +762,7 @@ pub fn json_bool_array(src: &str, key: &str) -> Result<Vec<bool>, Box<dyn std::e
         .collect()
 }
 
-pub fn json_string_array(src: &str, key: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    json_array(src, key)?
-        .split(',')
-        .map(|value| {
-            let value = value.trim();
-            if value.len() < 2 || !value.starts_with('"') || !value.ends_with('"') {
-                return Err(format!("json array value for {key} is not a string").into());
-            }
-            Ok(value[1..value.len() - 1].to_string())
-        })
-        .collect()
-}
-
-fn has_json_key(src: &str, key: &str) -> bool {
+pub(crate) fn has_json_key(src: &str, key: &str) -> bool {
     src.contains(&format!("\"{key}\""))
 }
 
@@ -1000,7 +987,11 @@ pub fn export_predictions<'a>(
             if index > 0 {
                 write!(out, ",")?;
             }
-            write!(out, "{}", json_float(*value))?;
+            if value.is_finite() {
+                write!(out, "{value:?}")?;
+            } else {
+                write!(out, "null")?;
+            }
         }
         writeln!(out, "]}}")?;
     }

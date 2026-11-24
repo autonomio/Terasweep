@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::results::{
-    self, BaseScore, CommonSpace, PriceStats, RunOutput, ScoreConfig, ScoreKey, ScoredRow,
+    self, CommonSpace, PriceStats, RunOutput, ScoreConfig, ScoredRow,
     SplitMix64, SweepSummary,
 };
 use crate::Matrix;
@@ -45,7 +45,6 @@ struct ModelSpace {
 
 #[derive(Clone, Copy)]
 pub(crate) struct Param {
-    pub(crate) id: usize,
     pub(crate) train: TrainConfig,
     pub(crate) score: ScoreConfig,
     pub(crate) train_ordinal: usize,
@@ -81,38 +80,38 @@ pub fn run(
         .map(|(idx, entry)| (cache_key(entry.config), idx))
         .collect();
     let ordinal_to_cache: Vec<usize>=train_configs.iter().map(|&c|train_index[&cache_key(c)]).collect();
-    let mut score_cache: HashMap<ScoreKey, BaseScore> = HashMap::new();
     let mut summary = SweepSummary::new();
 
     let start=Instant::now();
-    let mut bounds=optimized::OnlineBounds::new(train_cache.len());
-    let score_cache_entries=if matches!(level,Level::Compact|Level::Intrinsics|Level::Assembly) {
-        optimized::compact(level,runs,|id|model.sample(&common,id),&common,&ordinal_to_cache,&train_index,&train_cache,price_stats,&mut summary)?
+    let score_cache_entries = if !uncached {
+        let fits: Vec<_> = train_cache.iter().map(|fit| optimized::CachedFit {
+            preds: &fit.preds, mae: fit.mae, fit_failed: fit.fit_failed,
+        }).collect();
+        optimized::sweep_cached(level, runs, |id| {
+            let param = model.sample(&common, id);
+            let train_idx = if param.train_ordinal == usize::MAX {
+                train_index[&cache_key(param.train)]
+            } else {
+                ordinal_to_cache[param.train_ordinal]
+            };
+            optimized::CachedTrial { train_idx, threshold_ordinal: param.threshold_ordinal, score: param.score }
+        }, &common, &fits, price_stats, &mut summary)?
     } else {
         for id in 0..runs {
             let param=model.sample(&common,id);
-            if level==Level::Score {
-                summary.record(evaluate(&param,&train_index,&train_cache,&mut score_cache,price_stats)?);
-                continue;
-            }
             let idx=train_index[&cache_key(param.train)];
-            if uncached {
-                let per_trial;
-                let fit_stats=if level==Level::Naive {per_trial=precompute_stats(train);&per_trial} else {stats.as_ref().unwrap()};
-                train_cache[idx]=precompute_train_cache(fit_stats,test,&[param.train])?.pop().unwrap();
-                visited[idx]=true;
-            }
+            let per_trial;
+            let fit_stats=if level==Level::Naive {per_trial=precompute_stats(train);&per_trial} else {stats.as_ref().unwrap()};
+            train_cache[idx]=precompute_train_cache(fit_stats,test,&[param.train])?.pop().unwrap();
+            visited[idx]=true;
             let entry=&train_cache[idx];
             let score=if entry.fit_failed {(f64::NAN,f64::NAN,f64::NAN)} else {
-                let base=if level==Level::Bounds {
-                    let key=ScoreKey{train_idx:idx,threshold_bits:param.score.threshold.to_bits(),rule_idx:param.score.signal_rule.index()};
-                    *score_cache.entry(key).or_insert_with(||bounds.base(idx,&entry.preds,param.score,price_stats))
-                } else {results::compute_base_score(&entry.preds,param.score.threshold,param.score.signal_rule,price_stats)};
+                let base = results::compute_base_score(&entry.preds, param.score.threshold, param.score.signal_rule, price_stats);
                 results::apply_costs(&base,entry.preds.len(),param.score)
             };
-            summary.record(ScoredRow{id, signal_rule:param.score.signal_rule,fit_failed:entry.fit_failed,mae:results::round_to(entry.mae,3),signal_rate:score.0,net_return:score.1,sharpe:score.2});
+            summary.record(ScoredRow{id, signal_rule:param.score.signal_rule,fit_failed:entry.fit_failed,mae:results::round_to(entry.mae,MAE_DECIMALS),signal_rate:score.0,net_return:score.1,sharpe:score.2});
         }
-        score_cache.len()
+        0
     };
     eprintln!("PHASE level={level:?} stats={stats_s:.9} fit_predict={fit_s:.9} sweep={:.9}",start.elapsed().as_secs_f64());
 
@@ -229,7 +228,6 @@ impl ModelSpace {
         let fee_bps = common.fee_bps[rng.index(common.fee_bps.len())];
         let slippage_bps = common.slippage_bps[rng.index(common.slippage_bps.len())];
         Param {
-            id,
             train_ordinal: (ai*self.fit_intercepts.len()+fi)*self.solver_eps.len()+ei,
             threshold_ordinal: ti,
             train: TrainConfig {
@@ -245,39 +243,6 @@ impl ModelSpace {
             },
         }
     }
-}
-
-fn evaluate(
-    param: &Param,
-    train_index: &HashMap<TrainKey, usize>,
-    train_cache: &[FitOut],
-    score_cache: &mut HashMap<ScoreKey, BaseScore>,
-    price_stats: &PriceStats,
-) -> Result<ScoredRow, Box<dyn std::error::Error>> {
-    let cache_idx = *train_index
-        .get(&cache_key(param.train))
-        .ok_or("missing cache entry")?;
-    let entry = &train_cache[cache_idx];
-    let score = if entry.fit_failed {
-        (f64::NAN, f64::NAN, f64::NAN)
-    } else {
-        results::score_cached(
-            cache_idx,
-            &entry.preds,
-            param.score,
-            score_cache,
-            price_stats,
-        )
-    };
-    Ok(ScoredRow {
-        id: param.id,
-        signal_rule: param.score.signal_rule,
-        fit_failed: entry.fit_failed,
-        mae: results::round_to(entry.mae, MAE_DECIMALS),
-        signal_rate: score.0,
-        net_return: score.1,
-        sharpe: score.2,
-    })
 }
 
 fn row_json(
@@ -523,7 +488,7 @@ fn read_plan() -> Result<Option<Vec<Param>>,Box<dyn std::error::Error>> {
         let c:Vec<_>=line.split(',').collect();
         if c.len()!=7 {return Err("invalid plan row".into());}
         let signal_rule=match c[6] {"gt"=>results::SignalRule::Gt,"gte"=>results::SignalRule::Gte,"lt"=>results::SignalRule::Lt,"lte"=>results::SignalRule::Lte,"abs_gt"=>results::SignalRule::AbsGt,"abs_gte"=>results::SignalRule::AbsGte,_=>return Err("invalid plan rule".into())};
-        rows.push(Param{id:rows.len(),train_ordinal:usize::MAX,threshold_ordinal:usize::MAX,train:TrainConfig{alpha:c[0].parse()?,fit_intercept:c[1].parse()?,solver_eps:c[2].parse()?},score:ScoreConfig{threshold:c[3].parse()?,fee_bps:c[4].parse()?,slippage_bps:c[5].parse()?,signal_rule}});
+        rows.push(Param{train_ordinal:usize::MAX,threshold_ordinal:usize::MAX,train:TrainConfig{alpha:c[0].parse()?,fit_intercept:c[1].parse()?,solver_eps:c[2].parse()?},score:ScoreConfig{threshold:c[3].parse()?,fee_bps:c[4].parse()?,slippage_bps:c[5].parse()?,signal_rule}});
     }
     Ok(Some(rows))
 }
