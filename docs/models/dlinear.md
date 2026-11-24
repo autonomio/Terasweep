@@ -15,3 +15,21 @@ Limen’s SVD-based DLinear with the same return windows and fitted intercept. M
 ## Single run
 
 On Apple M1 Max, Terasweep took **0.226 ms** and the reference took **6.050 ms**, a **26.79×** speed ratio for one fit and predict call. [Comparison and reproduction](../../benchmarks/single-model/README.md) · [Recorded inputs and results](../../benchmarks/single-model/results-m1-max.json)
+
+## Sweep scaling
+
+On M1 Max, the sweep used **256 × 1** training and **128 × 1** test matrices and 18 distinct fit settings. The uncached Limen’s SVD DLinear reference refit each trial and used the same scalar scorer on the same trial order.
+
+| Sampled trials | Terasweep measured | Reference time | Reference basis | Ratio |
+| ---: | ---: | ---: | --- | ---: |
+| 10 | 0.701 ms | 1.217 s | Measured | 1,737× |
+| 100 | 0.526 ms | 1.078 s | Measured | 2,052× |
+| 1,000 | 0.651 ms | 1.512 s | Measured | 2,320× |
+| 10,000 | 1.755 ms | 3.097 s | Measured | 1,764× |
+| 100,000 | 10.593 ms | 21.587 s | Projected | 2,038× |
+| 1,000,000 | 92.334 ms | 3.44 min | Projected | 2,236× |
+| 10,000,000 | 805.010 ms | 34.26 min | Projected | 2,553× |
+| 100,000,000 | 7.408 s | 5.71 h | Projected | 2,773× |
+| 1,000,000,000 | 72.456 s | 2.38 days | Projected | 2,835× |
+
+Reference measurements through 10,000 trials passed prediction, signal, and winner parity checks. Larger reference entries extend that calibration linearly. Terasweep completed each listed size. [Method and reproduction](../../benchmarks/sweep-scaling/README.md) · [Measurement receipt](../../benchmarks/sweep-scaling/results-m1-max.json)

@@ -45,9 +45,9 @@ through the local stdio MCP server. [Agent interface](docs/agents.md)
 | [LightGBM](docs/models/lightgbm.md) | Prepared features and a continuous target | Official Python LightGBM regression |
 | [TiDE](docs/models/tide.md) | One observed return channel and a next-return target | Google Research TiDE |
 
-Each card gives the exact measured input, output, parity result, and single-run
-speed ratio. The comparison includes external alternatives on the same payload.
-[Comparison table and reproduction](benchmarks/single-model/README.md)
+Each card gives the measured input, output, parity result, single-run speed
+ratio, and sweep scaling through one billion sampled trials.
+[Single-run comparison](benchmarks/single-model/README.md) · [Sweep scaling](benchmarks/sweep-scaling/README.md)
 
 ## Research and teaching
 
