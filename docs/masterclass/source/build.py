@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build the self-contained performance learning page from repository evidence."""
+from base64 import b64encode
 import json
 from pathlib import Path
 S=Path(__file__).resolve().parent
@@ -45,9 +46,30 @@ nav=[];group=None
 for i,c in enumerate(D['chapters']):
     if group!=c['group']:
         group=c['group'];nav.append(f'<div class="nav-group">{group}</div>')
-    nav.append(f'<button class="nav-item" data-go="{c["id"]}"><span class="nav-no">{i:02d}</span><span>{labels[i]}</span><span class="nav-done" aria-hidden="true"></span></button>')
-sections=''.join(f'<section class="lesson {"active" if i==0 else ""}" id="{c["id"]}" aria-labelledby="{c["id"]}-title"><header class="chapter-header"><div class="eyebrow">{c["kicker"]}</div><h1 id="{c["id"]}-title" tabindex="-1">{c["title"]}</h1><p class="lead">{c["lead"]}</p></header><div class="lesson-body">{c["body"]}</div></section>' for i,c in enumerate(D['chapters']))
-replacements={'@@CSS@@':(S/'theme.css').read_text(),'@@DATA@@':data,'@@JS@@':(S/'app.js').read_text(),'@@NAV@@':''.join(nav),'@@CHAPTERS@@':sections}
+    nav.append(f'<a class="nav-item" href="#{c["id"]}" data-go="{c["id"]}"><span>{labels[i]}</span><span class="nav-done" aria-hidden="true"></span></a>')
+
+load_mark = (S / 'load-terasweep.svg').read_text(encoding='utf-8').strip()
+load_line = f'<p class="course-load"><span class="sr-only">Load Terasweep, 8, 1</span>{load_mark}</p>'
+sections = []
+for i, chapter in enumerate(D['chapters']):
+    chapter_id = chapter['id']
+    sections.append(
+        f'<section class="lesson {"active" if i == 0 else ""}" id="{chapter_id}" aria-labelledby="{chapter_id}-title">'
+        f'<header class="chapter-header">{load_line if i == 0 else ""}'
+        f'<h1 id="{chapter_id}-title" tabindex="-1">{chapter["title"]}</h1>'
+        f'<p class="lead">{chapter["lead"]}</p></header><div class="lesson-body">{chapter["body"]}</div></section>'
+    )
+
+font = b64encode((S / 'fonts' / 'finlandica-latin-400-normal.woff2').read_bytes()).decode('ascii')
+css = (S / 'theme.css').read_text(encoding='utf-8').replace('@@FONT@@', font)
+replacements = {
+    '@@FONT_LICENSE@@': (S / 'fonts' / 'finlandica-OFL.txt').read_text(encoding='utf-8'),
+    '@@CSS@@': css,
+    '@@DATA@@': data,
+    '@@JS@@': (S / 'app.js').read_text(),
+    '@@NAV@@': ''.join(nav),
+    '@@CHAPTERS@@': ''.join(sections),
+}
 page=(S/'template.html').read_text()
 for key,val in replacements.items():page=page.replace(key,val)
 out=S.parent/'index.html';out.write_text(page,encoding='utf-8');print(f'Built {out.name}: {out.stat().st_size:,} bytes')

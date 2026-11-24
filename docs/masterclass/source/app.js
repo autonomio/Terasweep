@@ -7,6 +7,7 @@ const sizes=[100000,1000000,10000000,100000000,1000000000], sizeNames=['100k','1
 const levels=['original','bounds','compact','intrinsics','assembly'];
 const labels={limen:'Native Limen CLI / UEL',naive:'Rust · no cross-trial reuse',stats:'+ Shared Gram statistics',train:'+ Fitted predictions',score:'+ Original score cache',original:'Original factorized Rust',bounds:'+ Constant-signal shortcut',compact:'+ Compact scoring cache',intrinsics:'+ Rust AVX-512 intrinsics',assembly:'+ Handwritten AVX-512'};
 const colors={original:'var(--off)',bounds:'var(--gold)',compact:'var(--blue)',intrinsics:'var(--green)',assembly:'var(--purple)',limen:'var(--gold)',naive:'var(--off)',stats:'var(--blue)',train:'var(--green)',score:'var(--purple)'};
+const seriesPatterns={original:'2 4',bounds:'7 4',compact:'12 4',intrinsics:'12 4 2 4',assembly:'none'};
 const storageKey='terasweep-masterclass-v1';
 for(const source of Object.values(DATA.sources)){
  source.url=source.url.replace('https://github.com/mikkokotila/Terasweep','https://github.com/autonomio/Terasweep');
@@ -33,15 +34,21 @@ function navigate(id,scroll=true){
  $$('.lesson').forEach(s=>s.classList.toggle('active',s.id===id));
  const idx=DATA.chapters.findIndex(c=>c.id===id);$('#prev-lesson').disabled=idx===0;$('#next-lesson').disabled=idx===DATA.chapters.length-1;
  $('#next-lesson').textContent=idx===DATA.chapters.length-1?'Course complete':'Next chapter →';
- $('#lesson-note').value=state.notes[id]||'';$('#note-label').textContent=`YOUR FIELD NOTES / ${String(idx).padStart(2,'0')}`;
+ $('#lesson-note').value=state.notes[id]||'';
  $('#chapter-counter').textContent=`${String(idx).padStart(2,'0')} / 12`;document.title=`${strip(DATA.chapters[idx].title)} — Terasweep performance learning`;
- try{history.replaceState(null,'','#'+id);}catch(e){}
+ if(scroll){try{history.replaceState(null,'','#'+id);}catch(e){}}
  $('#sidebar').classList.remove('open');$('#menu-btn').setAttribute('aria-expanded','false');
  progress();if(scroll){window.scrollTo({top:0,behavior:'instant'});$('.chapter-header h1',$('#'+id)).focus({preventScroll:true});}
  for(const dialog of $$('dialog'))if(dialog.open)dialog.close();
 }
-document.documentElement.dataset.theme=state.theme;
-$('#theme-btn').addEventListener('click',()=>{state.theme=state.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=state.theme;save();$('#theme-btn').setAttribute('aria-label','Switch to '+(state.theme==='dark'?'light':'dark')+' theme');});
+function renderTheme(){
+ document.documentElement.dataset.theme=state.theme;
+ const nextTheme=state.theme==='light'?'Dark':'Light';
+ $('#theme-btn').textContent=nextTheme;
+ $('#theme-btn').setAttribute('aria-label',`Switch to ${nextTheme.toLowerCase()} mode`);
+}
+renderTheme();
+$('#theme-btn').addEventListener('click',()=>{state.theme=state.theme==='dark'?'light':'dark';renderTheme();save();});
 $('#menu-btn').addEventListener('click',()=>{const open=$('#sidebar').classList.toggle('open');$('#menu-btn').setAttribute('aria-expanded',String(open));});
 $('#mastered').addEventListener('click',()=>{if(state.done.includes(state.chapter))state.done=state.done.filter(x=>x!==state.chapter);else state.done.push(state.chapter);save();progress();});
 $('#prev-lesson').addEventListener('click',()=>navigate(DATA.chapters[Math.max(0,DATA.chapters.findIndex(c=>c.id===state.chapter)-1)].id));
@@ -51,7 +58,7 @@ $('#reset-progress').addEventListener('click',()=>{if(confirm('Reset chapter che
 window.addEventListener('hashchange',()=>navigate(location.hash.slice(1)));
 document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT','BUTTON','SUMMARY','A'].includes(document.activeElement.tagName)||$$('dialog[open]').length)return;if(e.key==='ArrowRight')$('#next-lesson').click();if(e.key==='ArrowLeft')$('#prev-lesson').click();if(e.key==='/'){e.preventDefault();openDialog('search');}});
 document.addEventListener('click',e=>{
- const go=e.target.closest('[data-go]');if(go){navigate(go.dataset.go);return;}
+ const go=e.target.closest('[data-go]');if(go){if(go.tagName==='A'&&(e.metaKey||e.ctrlKey||e.shiftKey||e.altKey))return;e.preventDefault();navigate(go.dataset.go);return;}
  const ref=e.target.closest('[data-source]');if(ref){openSource(ref.dataset.source,ref.dataset.lines||'');return;}
  const op=e.target.closest('[data-open]');if(op){openDialog(op.dataset.open);return;}
  const close=e.target.closest('[data-close]');if(close){close.closest('dialog').close();return;}
@@ -192,12 +199,12 @@ function renderScaling(){
  sklearn:'PROJECTED numerator: bare sklearn fit/predict/MAE on the same 55-feature matrices. Fewer outputs than either pipeline; excludes Python startup and native artifact work. All Rust times are measured.',
  'limen-cli':'SEPARATE REFERENCE-RATE PROJECTION: full native CLI calibration uses a different, 13-feature raw-data workflow. This is NOT a matched-input end-to-end speedup. All Rust times are measured.'};
  const w=$('#scale-warning');w.textContent=view==='multiplier'?warns[ref]:view==='gain'?'DIRECT MEASURED RATIO: original Rust process time divided by the selected stage on the same AMD host and original workload. No native projection. One run per point.':view==='wall'?'MEASURED: complete-process elapsed seconds, including startup, inputs, computation, outputs and exit. One fresh process per stage/size.':'MEASURED: peak resident set size recorded for each complete process. Values include the complete pipeline, not just payload estimates.';w.classList.toggle('warning',view==='multiplier');
- $('#scale-series').innerHTML=levels.map(l=>`<button class="${visibleLevels.has(l)?'active':''}" data-series="${l}" aria-pressed="${visibleLevels.has(l)}"><i class="swatch" style="--series:${colors[l]}"></i>${labels[l]}</button>`).join('');
+ $('#scale-series').innerHTML=levels.map(l=>`<button class="${visibleLevels.has(l)?'active':''}" data-series="${l}" aria-pressed="${visibleLevels.has(l)}"><svg class="swatch" viewBox="0 0 24 4" aria-hidden="true"><line x2="24" y1="2" y2="2" stroke="${colors[l]}" stroke-width="2" stroke-dasharray="${seriesPatterns[l]}"/></svg>${labels[l]}</button>`).join('');
  const shown=levels.filter(l=>visibleLevels.has(l)),vals=shown.flatMap(l=>sizes.map(n=>chartValue(dataRow(n,l),view,ref))),lo=Math.min(...vals)*.8,hi=Math.max(...vals)*1.25,W=920,H=380,L=90,R=22,T=25,B=53,px=i=>L+i*(W-L-R)/4,py=v=>T+(Math.log10(hi)-Math.log10(v))/(Math.log10(hi)-Math.log10(lo))*(H-T-B);let s='';
  for(const v of logTicks(lo,hi)){const text=view==='multiplier'?fmt(v)+'×':view==='gain'?fmt(v,1)+'×':view==='memory'?fmt(v)+' MiB':v<1?fmt(v,2)+' s':fmt(v)+' s';s+=`<line class="grid" x1="${L}" x2="${W-R}" y1="${py(v)}" y2="${py(v)}"/><text x="${L-13}" y="${py(v)+4}" text-anchor="end">${text}</text>`;}
  for(let i=0;i<5;i++)s+=`<line class="grid" x1="${px(i)}" x2="${px(i)}" y1="${T}" y2="${H-B}"/><text x="${px(i)}" y="${H-B+22}" text-anchor="middle">${sizeNames[i]}</text>`;
  s+=`<line x1="${px(ni)}" x2="${px(ni)}" y1="${T}" y2="${H-B}" stroke="var(--subtle)" stroke-width="1.3" stroke-dasharray="5 5"/>`;
- shown.forEach(l=>{const points=sizes.map((n,i)=>`${px(i)},${py(chartValue(dataRow(n,l),view,ref))}`).join(' ');s+=`<polyline points="${points}" fill="none" stroke="${colors[l]}" stroke-width="${l===sel?3:1.7}" opacity="${l===sel?1:.75}"/>`;sizes.forEach((n,i)=>{const val=chartValue(dataRow(n,l),view,ref);s+=`<circle class="chart-point" data-plot-level="${l}" data-plot-size="${i}" tabindex="0" role="button" aria-label="${esc(labels[l])}, ${sizeNames[i]}, ${fmt(val,3)}" cx="${px(i)}" cy="${py(val)}" r="${i===ni&&l===sel?6:3.8}" fill="${colors[l]}" stroke="var(--panel)" stroke-width="1"><title>${labels[l]} · ${sizeNames[i]} · ${fmt(val,4)}${view==='multiplier'||view==='gain'?'×':view==='wall'?' seconds':' MiB'}</title></circle>`;});});
+ shown.forEach(l=>{const points=sizes.map((n,i)=>`${px(i)},${py(chartValue(dataRow(n,l),view,ref))}`).join(' ');s+=`<polyline points="${points}" fill="none" stroke="${colors[l]}" stroke-width="${l===sel?3:1.7}" stroke-dasharray="${seriesPatterns[l]}"/>`;sizes.forEach((n,i)=>{const val=chartValue(dataRow(n,l),view,ref);s+=`<circle class="chart-point" data-plot-level="${l}" data-plot-size="${i}" tabindex="0" role="button" aria-label="${esc(labels[l])}, ${sizeNames[i]}, ${fmt(val,3)}" cx="${px(i)}" cy="${py(val)}" r="${i===ni&&l===sel?6:3.8}" fill="${colors[l]}" stroke="var(--panel)" stroke-width="1"><title>${labels[l]} · ${sizeNames[i]} · ${fmt(val,4)}${view==='multiplier'||view==='gain'?'×':view==='wall'?' seconds':' MiB'}</title></circle>`;});});
  s+=`<text class="axis-label" x="${(L+W-R)/2}" y="${H-5}" text-anchor="middle">Sampled permutations · logarithmic axes</text>`;
  $('#scale-chart').innerHTML=svgBox(s,W,H,'Scaling curves with actual Rust timings and explicitly selected reference boundary');
  const native=r.native_estimates_seconds[ref],mul=r.multipliers_vs_projected_native[ref];
