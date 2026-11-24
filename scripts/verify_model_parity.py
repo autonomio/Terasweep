@@ -7,6 +7,7 @@ import json
 import os
 import struct
 import subprocess
+from functools import partial
 from importlib.metadata import version
 from itertools import product
 from pathlib import Path
@@ -220,7 +221,7 @@ def dlinear(binary, work, fixture):
     return result
 
 
-def lightgbm(binary, work, _fixture):
+def lightgbm(binary, work, _fixture, *, quick=False):
     data = ROOT / "data"
     train_x, train_y = read_matrix(data / "train.bin")
     test_x, _ = read_matrix(data / "test.bin")
@@ -236,6 +237,9 @@ def lightgbm(binary, work, _fixture):
             "min_data_in_leaf",
         )
     }
+    if quick:
+        axes = {key: values[:1] for key, values in axes.items()}
+        config.update(axes)
     export, _ = run(binary, work, data, config, 1000)
     cases = []
     for params, actual in json_fits(export, axes):
@@ -264,8 +268,12 @@ def lightgbm(binary, work, _fixture):
     return result
 
 
-def tide(binary, work, fixture):
+def tide(binary, work, fixture, *, quick=False):
     config = json.loads((ROOT / "configs/tide.json").read_text())
+    if quick:
+        config["lookbacks"] = config["lookbacks"][-1:]
+        for key in ("hidden_width", "learning_rate", "epochs"):
+            config[key] = config[key][:1]
     axes = {
         "lookback": config["lookbacks"],
         "hidden_width": config["hidden_width"],
@@ -327,6 +335,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("models", nargs="*", metavar="MODEL", help=", ".join(MODELS))
     parser.add_argument("--binary", type=Path, default=ROOT / "target/terasweep-funnel")
+    parser.add_argument(
+        "--quick", action="store_true", help="use one LightGBM and one TiDE fit"
+    )
     args = parser.parse_args()
     models = args.models or MODELS
     if any(model not in MODELS for model in models):
@@ -335,7 +346,12 @@ def main():
         digest, name = line.split("  ", 1)
         if hashlib.sha256((FIXTURES / name).read_bytes()).hexdigest() != digest:
             raise ValueError(f"Retained regression fixture hash differs for {name}")
-    checks = {"ridge": ridge, "dlinear": dlinear, "lightgbm": lightgbm, "tide": tide}
+    checks = {
+        "ridge": ridge,
+        "dlinear": dlinear,
+        "lightgbm": partial(lightgbm, quick=args.quick),
+        "tide": partial(tide, quick=args.quick),
+    }
     with TemporaryDirectory(prefix="terasweep-parity-") as temporary:
         work = Path(temporary)
         fixture = FIXTURES / "ridge"

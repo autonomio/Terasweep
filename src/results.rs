@@ -173,6 +173,18 @@ impl SweepSummary {
     pub fn best_mae(&self) -> Option<ScoredRow> {
         self.best_mae
     }
+
+    pub fn rows(&self) -> usize {
+        self.rows
+    }
+
+    pub fn failed_rows(&self) -> usize {
+        self.failed_rows
+    }
+
+    pub fn signal_rule_counts(&self) -> [usize; 6] {
+        self.signal_rule_counts
+    }
 }
 
 impl CommonSpace {
@@ -919,18 +931,18 @@ pub fn write_summary_json(
     let mut out = fs::File::create(path)?;
     let summary = &run.summary;
     writeln!(out, "{{")?;
-    writeln!(out, "  \"rows\": {},", summary.rows)?;
-    writeln!(out, "  \"failed_rows\": {},", summary.failed_rows)?;
+    writeln!(out, "  \"rows\": {},", summary.rows())?;
+    writeln!(out, "  \"failed_rows\": {},", summary.failed_rows())?;
     writeln!(
         out,
         "  \"valid_rows\": {},",
-        summary.rows - summary.failed_rows
+        summary.rows() - summary.failed_rows()
     )?;
     writeln!(out, "  \"hot_loop_seconds\": {:.12},", hot_seconds)?;
     writeln!(
         out,
         "  \"hot_loop_iterations_per_second\": {:.6},",
-        summary.rows as f64 / hot_seconds
+        summary.rows() as f64 / hot_seconds
     )?;
     writeln!(out, "  \"unique_alphas\": {},", run.unique_alphas)?;
     writeln!(
@@ -948,15 +960,11 @@ pub fn write_summary_json(
         "  \"score_cache_entries\": {},",
         run.score_cache_entries
     )?;
+    let [gt, gte, lt, lte, abs_gt, abs_gte] = summary.signal_rule_counts();
     writeln!(
         out,
         "  \"signal_rule_counts\": {{\"gt\": {}, \"gte\": {}, \"lt\": {}, \"lte\": {}, \"abs_gt\": {}, \"abs_gte\": {}}},",
-        summary.signal_rule_counts[0],
-        summary.signal_rule_counts[1],
-        summary.signal_rule_counts[2],
-        summary.signal_rule_counts[3],
-        summary.signal_rule_counts[4],
-        summary.signal_rule_counts[5]
+        gt, gte, lt, lte, abs_gt, abs_gte
     )?;
     writeln!(out, "  \"best_return\": {},", run.best_return_json)?;
     writeln!(out, "  \"best_sharpe\": {},", run.best_sharpe_json)?;

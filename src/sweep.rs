@@ -8,6 +8,9 @@ mod ridge;
 mod optimized;
 mod tide;
 
+#[cfg(test)]
+mod correctness_tests;
+
 use model::FitPrediction;
 use results::Prices;
 use std::env;
@@ -118,8 +121,9 @@ fn read_prices(bytes: &[u8]) -> Result<Prices, Box<dyn std::error::Error>> {
         return Err("invalid price data magic".into());
     }
 
-    let rows = u64::from_le_bytes(bytes[8..16].try_into().unwrap()) as usize;
-    let expected = 16 + rows * F64_BYTES * 2;
+    let rows = usize::try_from(u64::from_le_bytes(bytes[8..16].try_into()?))?;
+    let expected = rows.checked_mul(2 * F64_BYTES).and_then(|n| n.checked_add(16))
+        .ok_or("price byte count overflow")?;
     if bytes.len() != expected {
         return Err(format!(
             "price size {} does not match expected {}",
