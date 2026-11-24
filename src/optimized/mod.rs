@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::time::Instant;
 use crate::results::{self, BaseScore, PriceStats, CommonSpace, ScoreConfig, ScoredRow, SignalRule, SweepSummary};
-use crate::ridge::{FitOut, Param, TrainKey};
 
 #[cfg(target_arch = "x86_64")]
 mod simd;
@@ -103,10 +102,85 @@ impl Slots {
 struct RowRef { train: u32, slot: u32 }
 struct Job { train: usize, score: ScoreConfig, slot: usize }
 
-pub(crate) fn compact(
-    level: Level, runs: usize, sample: impl Fn(usize)->Param,
-    common: &CommonSpace, ordinal_to_cache: &[usize], train_index: &HashMap<TrainKey,usize>, cache: &[FitOut], p: &PriceStats,
+pub(crate) struct CachedFit<'a> {
+    pub preds: &'a [f64],
+    pub mae: f64,
+    pub fit_failed: bool,
+}
+
+pub(crate) struct CachedTrial {
+    pub train_idx: usize,
+    pub threshold_ordinal: usize,
+    pub score: ScoreConfig,
+}
+
+pub(crate) fn sweep_cached(
+    level: Level,
+    runs: usize,
+    sample: impl Fn(usize) -> CachedTrial,
+    common: &CommonSpace,
+    cache: &[CachedFit<'_>],
+    prices: &PriceStats,
     summary: &mut SweepSummary,
+) -> Result<usize, Box<dyn std::error::Error>> {
+    match level {
+        Level::Compact | Level::Intrinsics | Level::Assembly => {
+            return compact(level, runs, sample, common, cache, prices, summary);
+        }
+        Level::Naive | Level::Stats => {
+            return Err("naive and stats execution levels currently require Ridge".into());
+        }
+        _ => {}
+    }
+    let mut scores = HashMap::new();
+    let mut bounds = OnlineBounds::new(cache.len());
+    for id in 0..runs {
+        let trial = sample(id);
+        let fit = &cache[trial.train_idx];
+        let config = trial.score;
+        let (signal_rate, net_return, sharpe) = if fit.fit_failed {
+            (f64::NAN, f64::NAN, f64::NAN)
+        } else {
+            match level {
+                Level::Train => {
+                    let score = results::compute_base_score(
+                        fit.preds, config.threshold, config.signal_rule, prices,
+                    );
+                    results::apply_costs(&score, fit.preds.len(), config)
+                }
+                Level::Score => results::score_cached(
+                    trial.train_idx, fit.preds, config, &mut scores, prices,
+                ),
+                Level::Bounds => {
+                    let key = results::ScoreKey {
+                        train_idx: trial.train_idx,
+                        threshold_bits: config.threshold.to_bits(),
+                        rule_idx: config.signal_rule.index(),
+                    };
+                    let score = scores.entry(key).or_insert_with(|| {
+                        bounds.base(trial.train_idx, fit.preds, config, prices)
+                    });
+                    results::apply_costs(score, fit.preds.len(), config)
+                }
+                _ => unreachable!(),
+            }
+        };
+        summary.record(ScoredRow {
+            id,
+            signal_rule: config.signal_rule,
+            fit_failed: fit.fit_failed,
+            mae: results::round_to(fit.mae, 3),
+            signal_rate,
+            net_return,
+            sharpe,
+        });
+    }
+    Ok(scores.len())
+}
+
+fn compact(
+    level: Level, runs: usize, sample: impl Fn(usize)->CachedTrial,
+    common: &CommonSpace, cache: &[CachedFit<'_>], p: &PriceStats, summary: &mut SweepSummary,
 ) -> Result<usize,Box<dyn std::error::Error>> {
     let start=Instant::now();
     let validate=std::env::var_os("TERASWEEP_CHECK_BASE").is_some();
@@ -138,7 +212,7 @@ pub(crate) fn compact(
         let block_end=block_start.saturating_add(BLOCK_ROWS).min(runs);
     for id in block_start..block_end {
         let param=sample(id);
-        let idx=if param.train_ordinal==usize::MAX {train_index[&crate::ridge::cache_key(param.train)]} else {ordinal_to_cache[param.train_ordinal]};
+        let idx=param.train_idx;
         let e=&cache[idx];
         if e.fit_failed { rows.push(RowRef{train:idx as u32,slot:u32::MAX}); continue; }
         let rule=param.score.signal_rule.index();
@@ -148,11 +222,11 @@ pub(crate) fn compact(
         let key=idx*width+threshold;
         let slot=if let Some(slot)=table.get(key) {slot} else {
             let slot = {
-            let range=*ranges[idx].get_or_insert_with(|| Bounds::new(&e.preds));
+            let range=*ranges[idx].get_or_insert_with(|| Bounds::new(e.preds));
             if let Some(k)=range.constant(param.score) {
                 counts[k]+=1;
-                let b=*constants[k].get_or_insert_with(|| results::compute_base_score(&e.preds,param.score.threshold,param.score.signal_rule,p));
-                if validate { assert!(same_base(&b,&results::compute_base_score(&e.preds,param.score.threshold,param.score.signal_rule,p)),"constant mismatch"); }
+                let b=*constants[k].get_or_insert_with(|| results::compute_base_score(e.preds,param.score.threshold,param.score.signal_rule,p));
+                if validate { assert!(same_base(&b,&results::compute_base_score(e.preds,param.score.threshold,param.score.signal_rule,p)),"constant mismatch"); }
                 k as u32
             } else {
                 counts[2]+=1;
@@ -176,7 +250,7 @@ pub(crate) fn compact(
         let idx=jobs[order[at]].train;
         let mut end=at+1;
         while end<order.len() && end<at+8 && jobs[order[end]].train==idx {end+=1;}
-        let pred=&cache[idx].preds;
+        let pred=cache[idx].preds;
         if level==Level::Compact || !ranges[idx].unwrap().finite {
             for &j in &order[at..end] {let job=&jobs[j]; bases[job.slot]=Some(results::compute_base_score(pred,job.score.threshold,job.score.signal_rule,p));}
         } else {

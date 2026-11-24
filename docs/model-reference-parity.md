@@ -1,44 +1,62 @@
 # Model reference parity
 
-Run the prediction audit before comparing performance against an upstream model.
-The audit compares every test prediction with `rtol=1e-10` and `atol=1e-10`,
-and requires exact agreement on the full `prediction > 0` signal vector.
-LightGBM additionally requires bit-for-bit equality. The audit exits nonzero
-if a requested reference comparison fails or is blocked.
+Terasweep applies the Ridge experiment's validation method to all four models.
+Each comparison holds the prepared inputs and fit settings fixed, checks every
+prediction at `rtol=1e-10` and `atol=1e-10`, and requires exact agreement on the
+`prediction > 0` signal vector. LightGBM and TiDE also require bitwise equality
+on the tested host. For each model the audit checks identical scalar and compact
+summaries and prediction exports on the same ordered trials.
+
+## Reproduce
 
 ```sh
 python3.12 -m venv runs/reference-venv
-runs/reference-venv/bin/python -m pip install 'vaquum-limen[data,stats]==6.0.1' 'numpy==2.2.6' \
-  'scipy==1.15.3' 'scikit-learn==1.7.2' 'polars==1.42.1' 'pyarrow==23.0.1' 'lightgbm==4.6.0'
+runs/reference-venv/bin/python -m pip install 'vaquum-limen[data,stats]==6.0.1' \
+  'numpy==2.2.6' 'scipy==1.15.3' 'scikit-learn==1.7.2' 'polars==1.42.1' \
+  'pyarrow==23.0.1' 'lightgbm==4.6.0'
+
+python3.12 -m venv runs/tide-reference
+runs/tide-reference/bin/python -m pip install 'tensorflow==2.16.2' \
+  'keras==3.15.1' 'numpy==1.26.4' 'tqdm==4.67.1'
+curl -fsSL https://raw.githubusercontent.com/google-research/google-research/5b09c22d73a9d35eb6c5d2a99b95677a45053466/tide/models.py \
+  -o runs/tide-reference/models.py
+export TERASWEEP_TIDE_PYTHON="$PWD/runs/tide-reference/bin/python"
+export TERASWEEP_TIDE_SOURCE="$PWD/runs/tide-reference/models.py"
+
 make build
-runs/reference-venv/bin/python scripts/verify_model_parity.py
+TERASWEEP_CHECK_BASE=1 runs/reference-venv/bin/python scripts/verify_model_parity.py
 ```
 
-Pass model names to run a subset, for example
-`runs/reference-venv/bin/python scripts/verify_model_parity.py ridge dlinear`. The command
-prints per-fit counts and errors as JSON. It uses retained real-market inputs
-and creates temporary files for runs and prediction exports.
+The audit runs the full bundled training grids for DLinear, LightGBM and TiDE.
+It prints per-fit counts and errors as JSON and exits nonzero on a mismatch. Pass model names such as `ridge dlinear` to run a subset. The CLI
+loads LightGBM only for `lightgbm` and starts TensorFlow only for `tide`.
+The TiDE adapter verifies the upstream source digest before importing it.
 
-| Model | Result on Apple M1 Max | Comparison |
-| --- | --- | --- |
-| Ridge | Pass | Limen's sklearn-backed Ridge on the archived 1,014-row ordered plan. Six fits, 8,586 predictions, maximum absolute difference `3.86e-14`, zero signal differences. |
-| DLinear | Pass on aligned windows | Limen's SVD-based DLinear on identical single-channel return windows, with a fitted intercept. Twelve fits, 22,068 predictions, maximum absolute difference `1.70e-17`, zero signal differences. |
-| LightGBM | Pass | Native C API and Python reference use official LightGBM 4.6.0 on identical frozen arrays. All 9,088 predictions across eight fits are bit-identical. |
-| TiDE-style regressor | Blocked | The Rust smoke case fits and scores. The upstream model has separate residual encoder, decoder and temporal decoder blocks and a covariate input contract. The Rust model has one hidden layer and a linear skip, so there is no corresponding upstream fit to compare. |
+## Results on Apple M1 Max
 
-The Ridge check reuses the archived plan and prepared matrices and refits the
-current Limen reference. DLinear derives the return channel from the archived
-parquet and builds lag windows within each split with the same edge padding on
-both sides. This covers the aligned univariate fit. The default 55-channel
-Terasweep workload and intercept-free cases use a different input or fit
-contract. LightGBM uses the official regression estimator because the frozen
-target is a continuous next return. Limen's built-in LightGBM is a binary
-classifier. The original custom GBDT differed on all eight fits, changed 1,683
-signals, and had a maximum absolute prediction difference of `0.1047`. [Ridge experiment](../benchmarks/reports/terasweep_reverse_funnel_report.md#5-correctness-and-repeatability) · [Limen model contracts](https://docs.vaquum.fi/limen/reference/reference-architecture/) · [Official LightGBM regression](https://lightgbm.readthedocs.io/en/stable/pythonapi/lightgbm.LGBMRegressor.html) · [Upstream TiDE model](https://github.com/google-research/google-research/blob/5b09c22d73a9d35eb6c5d2a99b95677a45053466/tide/models.py)
+| Model | Fits | Predictions | Maximum absolute error | Signal differences |
+| --- | ---: | ---: | ---: | ---: |
+| Ridge | 6 | 8,586 | `3.86e-14` | 0 |
+| DLinear | 18 | 33,102 | `1.03e-16` | 0 |
+| LightGBM | 1,440 | 1,635,840 | `0` | 0 |
+| TiDE | 16 | 29,424 | `0` | 0 |
 
-The tolerance applies to the recorded inputs and parameter cases. Backtest
-accounting and performance require separate matched comparisons.
+Ridge replays the archived 1,014-row ordered plan and refits the current Limen
+Ridge reference. DLinear refits Limen's SVD reference with the same single-channel
+return windows and fitted intercept. LightGBM compares the official C API with
+the Python regression estimator on the same frozen arrays. The original custom
+GBDT changed 1,683 signals in the initial eight-fit comparison. TiDE uses the pinned Google Research
+model in a single-series, one-step configuration with no covariates and compares
+with an independent process supplied with the same pre-windowed observations.
+The three new comparisons also verify 1,000 sampled rows per model across both
+scalar and compact scoring. [Ridge experiment](../benchmarks/reports/terasweep_reverse_funnel_report.md#5-correctness-and-repeatability) · [Limen model contracts](https://docs.vaquum.fi/limen/reference/reference-architecture/) · [Official LightGBM regression](https://lightgbm.readthedocs.io/en/stable/pythonapi/lightgbm.LGBMRegressor.html) · [Upstream TiDE model](https://github.com/google-research/google-research/blob/5b09c22d73a9d35eb6c5d2a99b95677a45053466/tide/models.py)
 
-The benchmark evidence verifier checks the measured source against its
-preserved archive. Use `scripts/verify_evidence.py --check-current-source`
-with Python to also require the current checkout to match that source.
+All models share `train`, `score`, `bounds`, `compact`, `intrinsics` and
+`assembly` scoring levels. The `naive` and `stats` training controls currently
+require Ridge. The model checks above cover the recorded inputs and fit settings.
+Backtest equivalence against Limen and comparative performance require their own
+matched measurements.
+
+The benchmark evidence verifier checks the measured source against its preserved
+archive. Run `python3 scripts/verify_evidence.py --check-current-source` to also
+require the current checkout to match that source.

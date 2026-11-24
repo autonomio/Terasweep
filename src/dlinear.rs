@@ -1,12 +1,10 @@
 use std::collections::{HashMap, HashSet};
 
+use crate::optimized::{self, CachedFit, CachedTrial, Level};
 use crate::results::{
-    self, BaseScore, CommonSpace, PriceStats, RunOutput, ScoreConfig, ScoreKey, ScoredRow,
-    SplitMix64, SweepSummary,
+    self, CommonSpace, PriceStats, RunOutput, ScoreConfig, ScoredRow, SplitMix64, SweepSummary,
 };
 use crate::Matrix;
-
-const MAE_DECIMALS: i32 = 3;
 
 #[derive(Clone, Copy)]
 pub struct TrainConfig {
@@ -60,9 +58,9 @@ struct ModelSpace {
 }
 
 struct Param {
-    id: usize,
     train: TrainConfig,
     score: ScoreConfig,
+    threshold_ordinal: usize,
 }
 
 pub fn run(
@@ -72,8 +70,29 @@ pub fn run(
     price_stats: &PriceStats,
     runs: usize,
 ) -> Result<RunOutput, Box<dyn std::error::Error>> {
+    if train.cols != 1 || test.cols != 1 || train.rows == 0 || test.rows == 0 {
+        return Err("DLinear requires one nonempty observed return column in each split".into());
+    }
+    let level = Level::from_env()?;
+    if matches!(level, Level::Naive | Level::Stats) {
+        return Err("naive and stats execution levels currently require Ridge".into());
+    }
     let common = CommonSpace::from_json(config_json)?;
     let model = ModelSpace::from_json(config_json)?;
+    if model.fit_intercepts.iter().any(|&fit| !fit) {
+        return Err("Limen DLinear fits an intercept; set fit_intercept to [true]".into());
+    }
+    if model.lookbacks.iter().any(|&size| size == 0)
+        || model.kernels.iter().any(|&size| size == 0 || size % 2 == 0)
+        || model
+            .alphas
+            .iter()
+            .any(|&alpha| alpha <= 0.0 || !alpha.is_finite())
+    {
+        return Err(
+            "DLinear requires positive lookbacks and alphas and positive odd kernels".into(),
+        );
+    }
     let train_configs = model.train_configs();
     let stats = precompute_stats(train);
     let train_cache = precompute_train_cache(&stats, test, &train_configs)?;
@@ -82,20 +101,31 @@ pub fn run(
         .enumerate()
         .map(|(idx, entry)| (cache_key(entry.config), idx))
         .collect();
-    let mut score_cache: HashMap<ScoreKey, BaseScore> = HashMap::new();
     let mut summary = SweepSummary::new();
-
-    for id in 0..runs {
-        let param = model.sample(&common, id);
-        let row = evaluate(
-            &param,
-            &train_index,
-            &train_cache,
-            &mut score_cache,
-            price_stats,
-        )?;
-        summary.record(row);
-    }
+    let fits: Vec<_> = train_cache
+        .iter()
+        .map(|fit| CachedFit {
+            preds: &fit.preds,
+            mae: fit.mae,
+            fit_failed: fit.fit_failed,
+        })
+        .collect();
+    let score_cache_entries = optimized::sweep_cached(
+        level,
+        runs,
+        |id| {
+            let param = model.sample(&common, id);
+            CachedTrial {
+                train_idx: train_index[&cache_key(param.train)],
+                threshold_ordinal: param.threshold_ordinal,
+                score: param.score,
+            }
+        },
+        &common,
+        &fits,
+        price_stats,
+        &mut summary,
+    )?;
 
     results::export_predictions(train_cache.iter().map(|fit| {
         let config = fit.config;
@@ -141,7 +171,7 @@ pub fn run(
         unique_alphas: model.alphas.len(),
         unique_train_configs: train_cache.len(),
         failed_train_configs: train_cache.iter().filter(|entry| entry.fit_failed).count(),
-        score_cache_entries: score_cache.len(),
+        score_cache_entries,
         best_return_json,
         best_sharpe_json,
         best_mae_json,
@@ -202,7 +232,8 @@ impl ModelSpace {
             &common.threshold_signed
         };
         let alpha = self.alphas[rng.index(self.alphas.len())];
-        let threshold = thresholds[rng.index(thresholds.len())];
+        let threshold_ordinal = rng.index(thresholds.len());
+        let threshold = thresholds[threshold_ordinal];
         let fit_intercept = self.fit_intercepts[rng.index(self.fit_intercepts.len())];
         let solver_eps = self.solver_eps[rng.index(self.solver_eps.len())];
         let lookback = self.lookbacks[rng.index(self.lookbacks.len())];
@@ -210,7 +241,7 @@ impl ModelSpace {
         let fee_bps = common.fee_bps[rng.index(common.fee_bps.len())];
         let slippage_bps = common.slippage_bps[rng.index(common.slippage_bps.len())];
         Param {
-            id,
+            threshold_ordinal,
             train: TrainConfig {
                 alpha,
                 fit_intercept,
@@ -226,39 +257,6 @@ impl ModelSpace {
             },
         }
     }
-}
-
-fn evaluate(
-    param: &Param,
-    train_index: &HashMap<TrainKey, usize>,
-    train_cache: &[FitOut],
-    score_cache: &mut HashMap<ScoreKey, BaseScore>,
-    price_stats: &PriceStats,
-) -> Result<ScoredRow, Box<dyn std::error::Error>> {
-    let cache_idx = *train_index
-        .get(&cache_key(param.train))
-        .ok_or("missing cache entry")?;
-    let entry = &train_cache[cache_idx];
-    let score = if entry.fit_failed {
-        (f64::NAN, f64::NAN, f64::NAN)
-    } else {
-        results::score_cached(
-            cache_idx,
-            &entry.preds,
-            param.score,
-            score_cache,
-            price_stats,
-        )
-    };
-    Ok(ScoredRow {
-        id: param.id,
-        signal_rule: param.score.signal_rule,
-        fit_failed: entry.fit_failed,
-        mae: results::round_to(entry.mae, MAE_DECIMALS),
-        signal_rate: score.0,
-        net_return: score.1,
-        sharpe: score.2,
-    })
 }
 
 fn row_json(

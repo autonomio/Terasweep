@@ -1,17 +1,16 @@
 # Terasweep
 
-Minimal Rust sweep runner for trillion-scale experiment permutations.
+Rust runner for factorized model sweeps. The CLI reads prepared matrices, fits each
+unique training configuration, and reuses predictions and scores across trials.
 
-Upstream data is prepared by Limen; Terasweep only runs the hot sweep loop.
-
-This package contains the minimum surface needed to repeat the cached sampled sweep:
+The repository includes the following runtime inputs and model implementations.
 
 - `src/sweep.rs`: orchestration, config, sampling, and summary output.
 - `src/results.rs`: scoring, price accounting, fees, slippage, and metrics.
 - `src/ridge.rs`: first model architecture.
 - `src/dlinear.rs`: closed-form DLinear architecture.
 - `src/lightgbm.rs`: official LightGBM regression through its native library.
-- `src/tide.rs`: minimal dense temporal encoder-decoder architecture.
+- `src/tide.rs`: Google Research TiDE on one-step return windows.
 - `data/train.bin`: frozen training matrix and target.
 - `data/test.bin`: frozen test matrix and target.
 - `data/price.bin`: frozen open/close backtest prices.
@@ -36,10 +35,14 @@ make run RUNS=100000000 OUT=runs/100m
 make run RUNS=1000000000 OUT=runs/1b
 ```
 
-Run DLinear on the same frozen data:
+Prepare one-step return matrices for DLinear and TiDE from the retained market
+fixture. Install NumPy and Polars in the Python environment first.
 
 ```sh
-make run RUNS=1000000 OUT=runs/dlinear-1m CONFIG=configs/dlinear.json
+python scripts/prepare_return_inputs.py runs/return-inputs
+returns=runs/return-inputs
+make run RUNS=1000000 OUT=runs/dlinear-1m CONFIG=configs/dlinear.json \
+  TRAIN="$returns/train.bin" TEST="$returns/test.bin" PRICE="$returns/price.bin"
 ```
 
 Run LightGBM regression on the same frozen data. Install the official LightGBM
@@ -51,10 +54,12 @@ export TERASWEEP_LIGHTGBM_LIB="$(python -c 'from lightgbm.basic import _LIB; pri
 make run RUNS=1000000 OUT=runs/lightgbm-1m CONFIG=configs/lightgbm.json
 ```
 
-Run TiDE on the same frozen data:
+Run TiDE with the return matrices prepared above and the pinned Google Research
+model. The reference setup is documented in [Model reference parity](docs/model-reference-parity.md).
 
 ```sh
-make run RUNS=1000000 OUT=runs/tide-1m CONFIG=configs/tide.json
+make run RUNS=1000000 OUT=runs/tide-1m CONFIG=configs/tide.json \
+  TRAIN="$returns/train.bin" TEST="$returns/test.bin" PRICE="$returns/price.bin"
 ```
 
 Golden validation:

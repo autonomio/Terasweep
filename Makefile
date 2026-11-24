@@ -1,7 +1,7 @@
 RUSTC ?= rustc
 # Keep target/terasweep available as the historical executable, when present.
 BIN ?= target/terasweep-funnel
-SRC := $(wildcard src/*.rs) $(wildcard src/optimized/*.rs) $(wildcard src/optimized/*.S)
+SRC := $(wildcard src/*.rs) $(wildcard src/optimized/*.rs) $(wildcard src/optimized/*.S) scripts/tide_backend.py
 TRAIN ?= data/train.bin
 TEST ?= data/test.bin
 PRICE ?= data/price.bin
