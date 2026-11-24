@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
+use crate::lightgbm_api::LightGbm;
 use crate::results::{
     self, BaseScore, CommonSpace, PriceStats, RunOutput, ScoreConfig, ScoreKey, ScoredRow,
     SplitMix64, SweepSummary,
@@ -42,33 +43,6 @@ struct Param {
     score: ScoreConfig,
 }
 
-struct BinnedData {
-    rows: usize,
-    cols: usize,
-    train_bins: Vec<u16>,
-    test_bins: Vec<u16>,
-}
-
-struct Node {
-    feature: usize,
-    bin: u16,
-    left: usize,
-    right: usize,
-    value: f64,
-    is_leaf: bool,
-}
-
-struct Tree {
-    nodes: Vec<Node>,
-}
-
-struct Split {
-    leaf: usize,
-    feature: usize,
-    bin: u16,
-    gain: f64,
-}
-
 pub fn run(
     config_json: &str,
     train: &Matrix,
@@ -79,7 +53,7 @@ pub fn run(
     let common = CommonSpace::from_json(config_json)?;
     let model = ModelSpace::from_json(config_json)?;
     let train_configs = model.train_configs();
-    let train_cache = precompute_train_cache(train, test, &train_configs);
+    let train_cache = precompute_train_cache(train, test, &train_configs, common.seed)?;
     let train_index: HashMap<TrainKey, usize> = train_cache
         .iter()
         .enumerate()
@@ -234,20 +208,36 @@ impl ModelSpace {
     }
 }
 
-fn precompute_train_cache(train: &Matrix, test: &Matrix, configs: &[TrainConfig]) -> Vec<FitOut> {
+fn precompute_train_cache(
+    train: &Matrix,
+    test: &Matrix,
+    configs: &[TrainConfig],
+    seed: u64,
+) -> Result<Vec<FitOut>, Box<dyn std::error::Error>> {
+    let reference = LightGbm::load()?;
+    let labels: Vec<f32> = train.y.iter().map(|&value| value as f32).collect();
     let mut cache = Vec::new();
     let mut seen: HashSet<TrainKey> = HashSet::new();
-    let mut bins: HashMap<usize, BinnedData> = HashMap::new();
     for &config in configs {
-        let key = cache_key(config);
-        if !seen.insert(key) {
+        if !seen.insert(cache_key(config)) {
             continue;
         }
-        if !bins.contains_key(&config.max_bins) {
-            bins.insert(config.max_bins, build_bins(train, test, config.max_bins));
-        }
-        let binned = bins.get(&config.max_bins).unwrap();
-        let (preds, mae, fit_failed) = fit_predict(train, test, binned, config);
+        let fit_failed = config.num_leaves < 2
+            || config.num_trees == 0
+            || config.max_bins < 2
+            || config.min_data_in_leaf == 0;
+        let (preds, mae) = if fit_failed {
+            (Vec::new(), f64::NAN)
+        } else {
+            let preds = reference.fit_predict(train, &labels, test, config, seed)?;
+            let mae = preds
+                .iter()
+                .zip(&test.y)
+                .map(|(pred, target)| (pred - target).abs())
+                .sum::<f64>()
+                / test.rows as f64;
+            (preds, mae)
+        };
         cache.push(FitOut {
             config,
             preds,
@@ -255,7 +245,7 @@ fn precompute_train_cache(train: &Matrix, test: &Matrix, configs: &[TrainConfig]
             fit_failed,
         });
     }
-    cache
+    Ok(cache)
 }
 
 fn cache_key(config: TrainConfig) -> TrainKey {
@@ -267,269 +257,6 @@ fn cache_key(config: TrainConfig) -> TrainKey {
         config.lambda_l2.to_bits(),
         config.min_data_in_leaf,
     )
-}
-
-fn fit_predict(
-    train: &Matrix,
-    test: &Matrix,
-    bins: &BinnedData,
-    config: TrainConfig,
-) -> (Vec<f64>, f64, bool) {
-    if config.num_leaves < 2
-        || config.num_trees == 0
-        || config.max_bins < 2
-        || config.min_data_in_leaf == 0
-    {
-        return (Vec::new(), f64::NAN, true);
-    }
-    let init = train.y.iter().sum::<f64>() / train.rows as f64;
-    let mut train_pred = vec![init; train.rows];
-    let mut test_pred = vec![init; test.rows];
-    let mut residual = vec![0.0; train.rows];
-
-    for _ in 0..config.num_trees {
-        for row in 0..train.rows {
-            residual[row] = train.y[row] - train_pred[row];
-        }
-        let tree = build_tree(bins, &residual, config);
-        for row in 0..train.rows {
-            train_pred[row] += config.learning_rate * tree.predict_train(bins, row);
-        }
-        for row in 0..test.rows {
-            test_pred[row] += config.learning_rate * tree.predict_test(bins, row);
-        }
-    }
-
-    let mut mae = 0.0;
-    for (pred, target) in test_pred.iter().zip(test.y.iter()) {
-        mae += (pred - target).abs();
-    }
-    (test_pred, mae / test.rows as f64, false)
-}
-
-fn build_bins(train: &Matrix, test: &Matrix, max_bins: usize) -> BinnedData {
-    let rows = train.rows;
-    let cols = train.cols;
-    let mut train_bins = vec![0u16; train.rows * cols];
-    let mut test_bins = vec![0u16; test.rows * cols];
-    let mut values = Vec::with_capacity(train.rows);
-
-    for col in 0..cols {
-        values.clear();
-        for row in 0..train.rows {
-            values.push(train.x[row * cols + col]);
-        }
-        values.sort_by(|a, b| a.total_cmp(b));
-        values.dedup();
-        let mut cuts = Vec::new();
-        if values.len() > 1 {
-            for bin in 1..max_bins {
-                let idx = bin * (values.len() - 1) / max_bins;
-                cuts.push(values[idx]);
-            }
-            cuts.dedup();
-        }
-        for row in 0..train.rows {
-            train_bins[row * cols + col] = bin_value(train.x[row * cols + col], &cuts);
-        }
-        for row in 0..test.rows {
-            test_bins[row * cols + col] = bin_value(test.x[row * cols + col], &cuts);
-        }
-    }
-
-    BinnedData {
-        rows,
-        cols,
-        train_bins,
-        test_bins,
-    }
-}
-
-fn bin_value(value: f64, cuts: &[f64]) -> u16 {
-    let mut bin = 0usize;
-    while bin < cuts.len() && value > cuts[bin] {
-        bin += 1;
-    }
-    bin as u16
-}
-
-fn build_tree(bins: &BinnedData, residual: &[f64], config: TrainConfig) -> Tree {
-    let root_value = leaf_value(
-        (0..bins.rows).map(|row| residual[row]).sum(),
-        bins.rows,
-        config,
-    );
-    let mut tree = Tree {
-        nodes: vec![Node {
-            feature: 0,
-            bin: 0,
-            left: 0,
-            right: 0,
-            value: root_value,
-            is_leaf: true,
-        }],
-    };
-    let mut leaves = vec![0usize];
-    let mut leaf_rows = vec![(0..bins.rows).collect::<Vec<_>>()];
-
-    while leaves.len() < config.num_leaves {
-        let split = match best_split(bins, residual, config, &leaves, &leaf_rows) {
-            Some(split) => split,
-            None => break,
-        };
-        if split.gain <= 0.0 {
-            break;
-        }
-        let node_idx = leaves[split.leaf];
-        let mut left_rows = Vec::new();
-        let mut right_rows = Vec::new();
-        for &row in &leaf_rows[split.leaf] {
-            if train_bin(bins, row, split.feature) <= split.bin {
-                left_rows.push(row);
-            } else {
-                right_rows.push(row);
-            }
-        }
-        if left_rows.len() < config.min_data_in_leaf || right_rows.len() < config.min_data_in_leaf {
-            break;
-        }
-
-        let left_sum = left_rows.iter().map(|&row| residual[row]).sum::<f64>();
-        let right_sum = right_rows.iter().map(|&row| residual[row]).sum::<f64>();
-        let left_idx = tree.nodes.len();
-        let right_idx = left_idx + 1;
-        tree.nodes[node_idx] = Node {
-            feature: split.feature,
-            bin: split.bin,
-            left: left_idx,
-            right: right_idx,
-            value: 0.0,
-            is_leaf: false,
-        };
-        tree.nodes.push(Node {
-            feature: 0,
-            bin: 0,
-            left: 0,
-            right: 0,
-            value: leaf_value(left_sum, left_rows.len(), config),
-            is_leaf: true,
-        });
-        tree.nodes.push(Node {
-            feature: 0,
-            bin: 0,
-            left: 0,
-            right: 0,
-            value: leaf_value(right_sum, right_rows.len(), config),
-            is_leaf: true,
-        });
-        leaves[split.leaf] = left_idx;
-        leaf_rows[split.leaf] = left_rows;
-        leaves.push(right_idx);
-        leaf_rows.push(right_rows);
-    }
-
-    tree
-}
-
-fn best_split(
-    bins: &BinnedData,
-    residual: &[f64],
-    config: TrainConfig,
-    leaves: &[usize],
-    leaf_rows: &[Vec<usize>],
-) -> Option<Split> {
-    let mut best: Option<Split> = None;
-    let max_bins = config.max_bins;
-    let mut bin_sum = vec![0.0; max_bins];
-    let mut bin_count = vec![0usize; max_bins];
-
-    for leaf_idx in 0..leaves.len() {
-        let rows = &leaf_rows[leaf_idx];
-        if rows.len() < config.min_data_in_leaf * 2 {
-            continue;
-        }
-        let total_sum = rows.iter().map(|&row| residual[row]).sum::<f64>();
-        let parent_gain = total_sum * total_sum / (rows.len() as f64 + config.lambda_l2);
-
-        for feature in 0..bins.cols {
-            bin_sum.fill(0.0);
-            bin_count.fill(0);
-            for &row in rows {
-                let bin = train_bin(bins, row, feature) as usize;
-                bin_sum[bin] += residual[row];
-                bin_count[bin] += 1;
-            }
-
-            let mut left_sum = 0.0;
-            let mut left_count = 0usize;
-            for bin in 0..max_bins - 1 {
-                left_sum += bin_sum[bin];
-                left_count += bin_count[bin];
-                let right_count = rows.len() - left_count;
-                if left_count < config.min_data_in_leaf || right_count < config.min_data_in_leaf {
-                    continue;
-                }
-                let right_sum = total_sum - left_sum;
-                let gain = left_sum * left_sum / (left_count as f64 + config.lambda_l2)
-                    + right_sum * right_sum / (right_count as f64 + config.lambda_l2)
-                    - parent_gain;
-                if best.as_ref().map_or(true, |old| gain > old.gain) {
-                    best = Some(Split {
-                        leaf: leaf_idx,
-                        feature,
-                        bin: bin as u16,
-                        gain,
-                    });
-                }
-            }
-        }
-    }
-
-    best
-}
-
-fn leaf_value(sum: f64, count: usize, config: TrainConfig) -> f64 {
-    sum / (count as f64 + config.lambda_l2)
-}
-
-fn train_bin(bins: &BinnedData, row: usize, feature: usize) -> u16 {
-    bins.train_bins[row * bins.cols + feature]
-}
-
-fn test_bin(bins: &BinnedData, row: usize, feature: usize) -> u16 {
-    bins.test_bins[row * bins.cols + feature]
-}
-
-impl Tree {
-    fn predict_train(&self, bins: &BinnedData, row: usize) -> f64 {
-        let mut idx = 0usize;
-        loop {
-            let node = &self.nodes[idx];
-            if node.is_leaf {
-                return node.value;
-            }
-            idx = if train_bin(bins, row, node.feature) <= node.bin {
-                node.left
-            } else {
-                node.right
-            };
-        }
-    }
-
-    fn predict_test(&self, bins: &BinnedData, row: usize) -> f64 {
-        let mut idx = 0usize;
-        loop {
-            let node = &self.nodes[idx];
-            if node.is_leaf {
-                return node.value;
-            }
-            idx = if test_bin(bins, row, node.feature) <= node.bin {
-                node.left
-            } else {
-                node.right
-            };
-        }
-    }
 }
 
 fn evaluate(

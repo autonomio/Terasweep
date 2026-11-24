@@ -17,6 +17,7 @@ from tempfile import TemporaryDirectory
 import numpy as np
 import polars as pl
 from lightgbm import LGBMRegressor
+from lightgbm.basic import _LIB as LIGHTGBM_LIBRARY
 from limen.sfd.reference_architecture.dlinear_regressor import DLinearRegressor
 from limen.sfd.reference_architecture.ridge_regressor import RidgeRegressor
 
@@ -67,6 +68,8 @@ def run(binary, work, data, config, rows, plan=None):
         os.environ, TERASWEEP_LEVEL="compact", TERASWEEP_EXPORT_PREDICTIONS=str(export)
     )
     env.pop("TERASWEEP_PLAN", None)
+    if config.get("model") == "lightgbm":
+        env.setdefault("TERASWEEP_LIGHTGBM_LIB", LIGHTGBM_LIBRARY._name)
     if plan is not None:
         env["TERASWEEP_PLAN"] = str(plan)
     subprocess.run(
@@ -97,6 +100,9 @@ def compare(params, actual, expected):
         "params": params,
         "predictions": actual.size,
         "max_abs_difference": float(np.max(np.abs(actual - expected))),
+        "bit_identical": np.array_equal(
+            actual.view(np.uint64), expected.view(np.uint64)
+        ),
         "predictions_outside_tolerance": int(np.count_nonzero(~close)),
         "signal_mismatches": int(np.count_nonzero((actual > 0) != (expected > 0))),
     }
@@ -267,15 +273,18 @@ def lightgbm(binary, work, _fixture):
             n_jobs=1,
             deterministic=True,
             force_col_wise=True,
-            random_state=config["seed"],
+            random_state=config["seed"] & (2**31 - 1),
             verbosity=-1,
         )
         model.fit(train_x, train_y)
         expected = model.booster_.predict(test_x, num_threads=1)
         cases.append(compare(params, actual, expected))
-    return comparison_result(
+    result = comparison_result(
         "Official LightGBM LGBMRegressor (continuous return target)", cases
     )
+    if any(not case["bit_identical"] for case in cases):
+        result["status"] = "FAIL"
+    return result
 
 
 def tide(binary, work, _fixture):

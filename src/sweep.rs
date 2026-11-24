@@ -1,5 +1,6 @@
 mod dlinear;
 mod lightgbm;
+mod lightgbm_api;
 mod results;
 mod ridge;
 mod optimized;
