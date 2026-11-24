@@ -1,0 +1,39 @@
+<div class="equation big">min<sub>w,b</sub> ‖y − Xw − b1‖² + α‖w‖²</div>
+<p>Let <var>n</var> be the number of training rows, <var>d</var> the number of features and <var>m</var> the number of test rows. The normal equations for Ridge without an intercept are <code>(XᵀX + αI)w = Xᵀy</code>, so the training data enter through two quantities.</p>
+<div class="equation-pair">
+<div><span>GRAM MATRIX</span><strong>G = XᵀX</strong><small>d × d values</small></div>
+<div><span>RIGHT-HAND SIDE</span><strong>h = Xᵀy</strong><small>d values</small></div></div>
+<p>For each regularization strength, solve <code>(G + αI)w = h</code>. Since neither <var>G</var> nor <var>h</var> depends on <var>α</var>, the original implementation computes them once for the fixed data.</p><button class="ref" data-lines="252-383" data-source="original-ridge" type="button">precompute_stats and fit_from_stats<span aria-hidden="true"> ↗</span></button>
+<details><summary>Intercept derivation</summary>
+<div class="detail-body">
+<p>Centering gives <code>Xc = X − 1x̄ᵀ</code> and <code>yc = y − ȳ1</code>. With <code>Gc = XcᵀXc</code> and <code>hc = Xcᵀyc</code>, the centered system is <code>(Gc + αI)w = hc</code> and the intercept is <code>b = ȳ − x̄ᵀw</code>. The original code retains raw and centered statistics and accumulates the lower triangle before mirroring it for the solve.</p>
+<p>The intercept is unpenalized. Its setting selects the appropriate stored statistics.</p></div></details>
+<div class="split">
+<div>
+<h2>Size of the linear system</h2>
+<p>In the original <code>4,136 × 55</code> training matrix, the statistics retain all 55 features. Each fit solves a <code>55 × 55</code> system, whose full FP64 Gram matrix occupies 24,200 bytes (<code>55 × 55 × 8</code>).</p>
+<p>Cholesky factors the system matrix as <code>A = LLᵀ</code>, after which forward and backward substitution recover the coefficients. The implementation uses this decomposition for each training key and shares neither an explicit inverse nor an eigendecomposition across regularization strengths.</p></div>
+<div class="card"><span class="card-index">Fixed training inputs</span>
+<h3>Dependencies of the statistics</h3>
+<p>A change to the feature set, scaler, split, window, target or dataset changes the data from which the statistics are formed.</p>
+<p>Terasweep’s <code>solver_eps</code> is a Cholesky pivot cutoff, whereas sklearn’s <code>tol</code> concerns its iterative solvers. A failed solve is retained as a failed configuration.</p><button class="ref" data-lines="400-445" data-source="original-ridge" type="button">The in-place Cholesky loop<span aria-hidden="true"> ↗</span></button></div></div>
+<div class="lab" id="ridge-lab">
+<div class="lab-heading"><span class="eyebrow">Regularization and the Gram matrix</span><span class="badge teaching">ILLUSTRATIVE FIXTURE</span></div>
+<p class="fine">The calculation uses eight illustrative pairs <code>(x, y)</code> and one feature.</p>
+<div class="control-row">
+<label>log₁₀ α <input id="ridge-alpha" max="3" min="-3" step="0.05" type="range" value="0"/></label>
+<label class="check-label"><input checked="" id="ridge-intercept" type="checkbox"/> Fit intercept</label></div>
+<div class="lab-split">
+<div id="ridge-chart"></div>
+<div>
+<div class="metric-grid" id="ridge-metrics"></div>
+<p class="fine" id="ridge-explanation"></p></div></div></div>
+<h2>Reuse of fitted predictions</h2>
+<p>After a successful fit, the original code computes predictions and MAE in one pass and stores them under <code>(alpha.to_bits(), fit_intercept, solver_eps.to_bits())</code>. Fees and thresholds enter downstream of that key.</p>
+<div class="equation">O(nd²) + O(Ud³) + O(Umd)</div>
+<p class="fine">The expression gives leading-order work for statistics, <var>U</var> distinct solves and their test predictions. It excludes parsing, allocations, failure branches, scoring and reporting.</p>
+<div class="checkpoint" data-correct="2">
+<div class="eyebrow">CHECK YOUR MODEL</div>
+<h3>Which fitting work is repeated if the number of fee settings doubles and data and model settings are fixed?</h3>
+<div class="quiz-options"><button data-choice="0" type="button">The Gram matrix.</button><button data-choice="1" type="button">All coefficient fits.</button><button data-choice="2" type="button">Neither the statistics nor the coefficient fits.</button></div>
+<p class="quiz-feedback" hidden="" role="status">The fee changes scoring. The model objective and its sufficient statistics are independent of it.</p></div>
