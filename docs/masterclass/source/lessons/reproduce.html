@@ -1,0 +1,38 @@
+<div class="callout"><strong>Source and experiment revisions</strong>
+<p>The original source is preserved as <code>baseline-2026-05</code>, and the integrated runtime is commit <code>70525ba</code>. The original Ridge reports, raw records, archives and integrity checks are retained in <code>benchmark-handoff-2026-09-24</code> at <code>2e549d4</code>.</p><button class="ref" data-lines="" data-source="handoff" type="button">Handoff record and source identity<span aria-hidden="true"> ↗</span></button><button class="ref" data-lines="" data-source="pipeline-doc" type="button">Build and verification contract<span aria-hidden="true"> ↗</span></button></div>
+<h2>Retained records and replay commands</h2>
+<p>The reports are in <code>benchmarks/reports/</code>, the original bundles in <code>benchmarks/archives/</code>, the earlier prototypes and C oracle in <code>benchmarks/mac-history/</code>, and the handoff checks in <code>benchmarks/handoff/</code>. Compiler and Python environments can be rebuilt.</p>
+<div class="code-card">
+<div class="code-title">VERIFY THE PRESERVED EVIDENCE</div><pre><code>git clone https://github.com/autonomio/Terasweep.git
+cd Terasweep
+python3 scripts/verify_evidence.py
+
+# Use a separate clean checkout for the original snapshot:
+git worktree add ../Terasweep-baseline baseline-2026-05</code></pre><button class="copy-code">Copy commands</button></div>
+<div class="code-card">
+<div class="code-title">RUN THE INTEGRATED LEVELS · DISTINCT OUTPUT DIRECTORIES</div><pre><code>make build
+make run LEVEL=compact RUNS=1000000 OUT=runs/lesson-compact
+
+# On supported x86-64 Linux with Rust 1.89+:
+make run LEVEL=intrinsics RUNS=1000000 OUT=runs/lesson-intrinsics
+make run LEVEL=assembly RUNS=1000000 OUT=runs/lesson-assembly
+make test
+TERASWEEP_CHECK_BASE=1 make verify LEVEL=assembly</code></pre><button class="copy-code">Copy commands</button></div>
+<p>For performance runs, leave <code>TERASWEEP_CHECK_BASE</code> disabled, since it recomputes the oracle. <code>make verify</code> creates a new output directory. <code>make run</code> writes to the selected path, so use a fresh path to retain earlier observations. The bare executable defaults to <code>score</code> and the Makefile to <code>compact</code>. SIMD selections unsupported by the host fail.</p><button class="ref" data-lines="" data-source="pipeline-doc" type="button">Build defaults, output preservation and oracle mode<span aria-hidden="true"> ↗</span></button>
+<h2>Current model checks</h2>
+<p>The model cards give the single-fit fixtures and reference settings, and the matched sweep receipt records fixture hashes, parameter grids, backend versions and measured reference prefixes. Citations to the results can identify both the source commit and the receipt. <a href="https://github.com/autonomio/Terasweep/blob/main/README.md#examples">Runnable examples</a> · <a href="https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/README.md#reproduce">Matched sweep reproduction</a> · <a href="https://github.com/autonomio/Terasweep/blob/main/README.md#citations">Citations</a></p>
+<h2>Sequence of implementation and validation</h2>
+<div class="method-chain"><span>Fix the comparison contract</span><i>→</i><span>Factor dependencies</span><i>→</i><span>Profile</span><i>→</i><span>Remove repeated computations</span><i>→</i><span>Reduce cache storage</span><i>→</i><span>Choose SIMD lanes</span><i>→</i><span>Schedule instructions</span><i>→</i><span>Validate and measure scaling</span><i>→</i><span>Commit the evidence</span></div>
+<p>Most of the native-relative ratio arises before instruction scheduling, because reuse removes computations the reference repeats. The effect of replacing intrinsics with assembly is measured separately by the controlled kernel and process comparisons.</p>
+<div class="lab" id="capstone">
+<div class="lab-heading"><span class="eyebrow">Results statement</span></div>
+<p>Write a short results paragraph with the measured billion-row time, what the row count includes, the boundary of the native reference projection, what the paired assembly runs establish and one detail needed to reproduce the result.</p>
+<label class="sr-only" for="capstone-text">Results statement</label><textarea id="capstone-text" placeholder="On the recorded AMD EPYC 9V74 guest, the integrated Rust pipeline…" rows="6"></textarea><button class="primary" id="capstone-check">Check the statement</button>
+<div aria-live="polite" id="capstone-feedback"></div>
+<details><summary>Example results statement</summary>
+<div class="detail-body">
+<p>On a single pinned CPU in the AMD EPYC 9V74 guest, the integrated Rust pipeline with the handwritten kernel processed one billion sampled rows in 98.286879 s, including cached failed-fit requests. A linear model calibrated on short native Ridge runs using the same matrices estimates a time ratio of approximately 63,622 under the native scoring convention. One intrinsics and assembly pair at this size leaves the size of the assembly-specific effect unresolved, while the earlier paired integration runs measured a small whole-process difference with substantial variation. The source, frozen inputs, validation records and replay scripts are identified by the benchmark handoff snapshot.</p></div></details></div>
+<h2>Work remaining after saturation</h2>
+<p>After the score cache fills, most elapsed time belongs to sampling, lookups, cost adjustment and reduction. The retained experiments do not measure changes to those stages.</p>
+<div class="closing-quote">First change <em>how much work exists.</em><br/>Then change how fast you execute what remains.</div>
+<div class="small-buttons"><button class="primary" data-open="evidence">Open the evidence room</button><button class="secondary" id="export-learning">Export field notes and progress ↓</button><a class="secondary" href="https://github.com/autonomio/Terasweep/tree/benchmark-handoff-2026-09-24" rel="noopener" target="_blank">Open the verified Git snapshot ↗</a></div>

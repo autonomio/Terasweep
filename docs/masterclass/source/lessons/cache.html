@@ -1,0 +1,33 @@
+<div class="split">
+<div>
+<h2>Logical keys and physical slots</h2>
+<p>In the measured build, the original <code>BaseScore</code> occupies 128 bytes and its key occupies 24 bytes. The compact cache maps a key to the shared all-off result, the shared all-on result or an individually stored mixed result.</p>
+<p>Cache cardinality still counts logical keys, regardless of how many distinct payloads are stored.</p><button class="ref" data-lines="84-170" data-source="optimized" type="button">Slots, constants and mixed payloads<span aria-hidden="true"> ↗</span></button></div>
+<div class="code-card">
+<div class="code-title">LOGICAL ID → PHYSICAL PAYLOAD</div><pre><code>0       → shared all-off BaseScore
+1       → shared all-on BaseScore
+2 + j   → mixed BaseScore[j]
+
+row     → { train: u32, slot: u32 }</code></pre><p class="fine">The payload sizes exclude metadata, optional values, capacity slack, indexing and buffers, all of which contribute to process memory.</p></div></div>
+<h2>Categorical keys and indexing</h2>
+<p>The sampler already selects ordinals in finite parameter arrays, so the normal generated-row path can carry those ordinals without hashing the floating-point values. Duplicate settings retain their original deduplication behavior, and explicit CSV plans use value-based lookups.</p>
+<p>The implementation uses a dense index when its address space fits within 64 MiB, and a sparse map with bounded initial reservation when it does not.</p><button class="ref" data-lines="84-155" data-source="optimized" type="button">Categorical IDs and bounded table<span aria-hidden="true"> ↗</span></button>
+<div class="lab" id="memory-lab">
+<div class="lab-heading"><span class="eyebrow">Storage for scheduled row references</span><span class="badge teaching">ROW-REFERENCE STORAGE CALCULATION</span></div>
+<label>Requested rows <input id="memory-n" max="4" min="0" step="1" type="range" value="4"/><output id="memory-size">1b</output></label>
+<div class="metric-grid" id="memory-metrics"></div>
+<p class="fine">Each reference occupies 8 bytes for two <code>u32</code> values. The scheduler holds at most 1,048,576 references at once. The calculation covers only the row-reference buffer.</p>
+<div class="block-animation" id="block-animation"></div>
+<p>The cache persists across blocks. Within a block, pending mixed jobs are grouped by model, then the results are reduced in the original row order so that rounded ties still favor the earliest row.</p></div>
+<div class="stat-strip">
+<div><strong>939.1 MiB</strong><span>Original Rust peak RSS at 1b, AMD scaling run</span></div>
+<div><strong>77.8 MiB</strong><span>Assembly pipeline peak RSS at 1b, same study</span></div>
+<div><strong>224,178</strong><span>mixed states at full key-space coverage</span></div></div>
+<p>The two peak RSS values describe the complete implementations. The scheduled row buffer is bounded, while the cache continues to grow with the number of distinct score keys until it reaches capacity for the configured space.</p><button class="ref" data-lines="103-133" data-source="scaling" type="button">Coverage, phases and memory<span aria-hidden="true"> ↗</span></button>
+<div class="callout"><strong>Work retained for each sampled row</strong>
+<p>The compact implementation samples the row once during planning and again during original-order reduction. Cost adjustment and winner selection also run for each row, and these operations dominate after the score cache fills.</p><button class="ref" data-lines="137-216" data-source="optimized" type="button">Planning and original-order reduction<span aria-hidden="true"> ↗</span></button></div>
+<div class="checkpoint" data-correct="0">
+<div class="eyebrow">CHECK YOUR MODEL</div>
+<h3>How can the first million rows have 44,560 mixed payloads and more than 44,560 logical score keys?</h3>
+<div class="quiz-options"><button data-choice="0" type="button">The other logical keys still exist, but can point to two shared constant payloads.</button><button data-choice="1" type="button">Failed fits are converted to mixed scores.</button><button data-choice="2" type="button">The runner discards all-off and all-on trials.</button></div>
+<p class="quiz-feedback" hidden="" role="status">The constant keys remain in the requested and scored totals. Each can refer to one of the two shared payloads.</p></div>

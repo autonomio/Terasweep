@@ -1,0 +1,61 @@
+<section aria-labelledby="matched-sweeps-title" id="matched-sweeps">
+<h2 id="matched-sweeps-title">Four matched sweeps on Apple M1 Max</h2>
+<p>Each model used 256 training and 128 test rows from its retained market-data fixture. Compact scalar scoring was timed for nine Terasweep sweep sizes, from 10 to one billion trials. All four billion-trial runs completed with zero failed rows and reused existing fits whenever their training settings matched.</p>
+<div class="table-wrap">
+<table id="matched-sweep-table">
+<caption>One billion sampled trials per model</caption>
+<thead>
+<tr><th scope="col">Model</th><th scope="col">Measured Terasweep time</th><th scope="col">Distinct fits</th><th scope="col">Score cache entries</th><th scope="col">Largest measured reference</th></tr></thead>
+<tbody>@@MATCHED_SWEEP_ROWS@@</tbody>
+</table></div>
+<p>The reference refits each trial. With the input, trial order and scalar scoring held fixed, the measured reference prefixes produce predictions within the stated tolerances and agree exactly on signals and reported winners. LightGBM and TiDE also produce bit-identical predictions in these checks.</p>
+<p>At ten TiDE trials, Terasweep took 6.064 s and the uncached reference took 4.472 s. At 100 trials, the measured times were 3.650 s and 33.229 s, respectively.</p>
+<p>The Terasweep timings start after input loading and include backend setup and winner details. Beyond each largest measured reference prefix, the model card estimates the reference time from its measured per-trial cost plus one backend setup. <a href="https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/README.md">Method and calibration</a> · <a href="https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/results-m1-max.json">Measurement receipt</a></p>
+</section>
+<h2>Original Ridge scaling on AMD EPYC</h2>
+<div class="lab scaling-lab" id="scale-lab">
+<div class="lab-heading"><span class="eyebrow">5,555,500,000 measured Rust row evaluations</span><span class="badge measured">AMD EPYC 9V74</span></div>
+<div class="control-row">
+<label>View <select id="scale-view"><option value="multiplier">Native reference-cost multiplier</option><option value="wall">Measured process seconds</option><option value="gain">Measured gain over original Rust</option><option value="memory">Measured peak RSS</option></select></label>
+<label>Native reference <select id="scale-reference"><option value="limen-prepared">Limen Ridge · same matrices</option><option value="sklearn">Bare sklearn · same matrices</option><option value="limen-cli">Full CLI · different calibration workload</option></select></label></div>
+<div class="context-bar" id="scale-warning"></div>
+<div class="legend-controls" id="scale-series"></div>
+<div id="scale-chart"></div>
+<div class="control-row">
+<label>Measured size <input id="scale-n" max="4" min="0" step="1" type="range" value="4"/><output id="scale-n-out">1b</output></label>
+<label>Selected stage <select id="scale-level"><option value="original">Original factorized Rust</option><option value="bounds">+ Bounds</option><option value="compact">+ Compact cache</option><option value="intrinsics">+ Rust intrinsics</option><option selected="" value="assembly">+ Handwritten assembly</option></select></label></div>
+<div class="metric-grid four" id="scale-readout"></div>
+<div class="table-wrap" id="scale-table"></div>
+<p class="fine">Each plotted Rust result comes from one fresh process with initially empty computational caches. All runs are shown, and OS file caches were left intact. Lines connect the recorded points.</p><button class="secondary" id="download-scaling">Export recorded scaling data ↓</button></div>
+<h2>Native reference calibration</h2>
+<p>The same-matrix native Ridge reference was timed twice at each of 256 and 2,048 evaluations, with a fresh sklearn fit and native metrics per evaluation. The fitted cost model is</p>
+<div class="equation">T<sub>Limen prepared</sub>(N) = 0.120492 + 0.006253191N seconds</div>
+<p>The estimated intercept is for the prepared loop, which excludes Python startup and imports. The Rust denominator is the complete process. The full native CLI calibration measures its complete process on a separate 13-feature workflow.</p>
+<p>For one billion sampled rows, the measured assembly process took 98.286879 s and the same-matrix native Ridge projection was about 72.37 days, giving a projected reference-cost ratio of about 63,622. The native reference retains its own signal and solver-failure conventions.</p><button class="ref" data-lines="19-42" data-source="scaling" type="button">Three calibrations and what they mean<span aria-hidden="true"> ↗</span></button>
+<div class="callout warning"><strong>Variation in the calibration</strong>
+<p>The line assumes a constant per-evaluation cost. The two prepared-native repetitions imply slopes of about 5.897 and 6.609 ms per row, and do not measure long-run memory, artifact I/O or scheduling effects.</p></div>
+<h2>Score-cache saturation</h2>
+<div class="table-wrap" id="coverage-table"></div>
+<p>Each of the 1,677 successful training keys has 2,006 rule and threshold combinations (<code>4 × 401 + 2 × 201</code>), for 3,364,062 possible valid base-score keys. The 100m sample reaches that ceiling. At one billion rows, about 99.54% of valid rows reuse a base score.</p>
+<div class="equation">T<sub>Rust</sub>(N) ≈ fixed training + c · unique scores(N) + dN</div>
+<p>After unique scores stop increasing, the per-row work continues to grow. With a linear native reference cost, the structural model therefore tends to a finite time ratio.</p><button class="ref" data-lines="92-115" data-source="scaling" type="button">Coverage and saturation<span aria-hidden="true"> ↗</span></button>
+<h2>Phase timings at one billion rows</h2>
+<div class="phase-list wide">
+<div><span>Planning, sampling and cache lookup at 1b</span><b>53.805 s</b></div>
+<div><span>Costs and summary reduction</span><b>44.016 s</b></div>
+<div class="highlight"><span>Mixed scoring, grouping and packing</span><b>0.336 s</b></div></div>
+<p>Mixed scoring, grouping and packing account for 0.342% of the process time. Once most paths are reused, the measured intrinsics and assembly times converge even as the projected native-relative ratio grows.</p><button class="ref" data-lines="117-133" data-source="scaling" type="button">One-billion phase record<span aria-hidden="true"> ↗</span></button>
+<div class="lab" id="amdahl-lab">
+<div class="lab-heading"><span class="eyebrow">Runtime share and potential speedup</span><span class="badge teaching">AMDAHL CALCULATION</span></div>
+<div class="control-row">
+<label>Fraction of total time in target, % <input id="amdahl-p" max="100" min="0" step="0.001" type="range" value="50"/><output id="amdahl-p-out">50</output></label>
+<label>Kernel speedup <input id="amdahl-s" max="50" min="1" step="0.1" type="range" value="2"/><output id="amdahl-s-out">2×</output></label></div>
+<div class="small-buttons"><button data-amdahl="half">50% runtime share, 2× kernel speed</button><button data-amdahl="billion">Measured runtime share, hypothetical 8× kernel speed</button><button data-amdahl="near">95% runtime share, 8× kernel speed</button></div>
+<div class="metric-grid" id="amdahl-output"></div>
+<div class="equation">S<sub>whole</sub> = 1 / [(1 − p) + p / s]</div>
+<p class="fine">The calculation holds the time of all other work fixed. At a target share of 100%, the resulting mathematical limit is unbounded as kernel speed grows without bound.</p></div>
+<div class="checkpoint" data-correct="1">
+<div class="eyebrow">CHECK YOUR MODEL</div>
+<h3>Why does faster scoring have less effect as the number of sampled rows grows?</h3>
+<div class="quiz-options"><button data-choice="0" type="button">The original code starts using the new assembly automatically.</button><button data-choice="1" type="button">Both score caches fill, leaving mostly work that is repeated once per sampled row.</button><button data-choice="2" type="button">Large N removes the need to process requested rows.</button></div>
+<p class="quiz-feedback" hidden="" role="status">Once both implementations reuse nearly every valid base score, first-time scoring accounts for a smaller share of complete-process time.</p></div>

@@ -1,0 +1,67 @@
+{
+  "brief": {
+    "title": "Terasweep performance",
+    "group": "Reference and scope",
+    "lead": "Terasweep reduces repeated computation in parameter sweeps by sharing training statistics, fits and scores across trials that have the same inputs at those stages."
+  },
+  "reference": {
+    "title": "Ridge reference",
+    "group": "Reference and scope",
+    "lead": "The original comparison pairs a native Limen Ridge reference with a factorized Rust runner. Its timing and prediction results are interpretable at the boundaries held in common by the two programs."
+  },
+  "model": {
+    "title": "Ridge training statistics",
+    "group": "Factorization",
+    "lead": "Fits at different regularization strengths can share statistics computed from the training data. The solver still runs for each distinct training key."
+  },
+  "sweep": {
+    "title": "Sweep dependencies",
+    "group": "Factorization",
+    "lead": "The quantities needed for a trial can be computed under separate keys. A change invalidates only intermediates that depend on the changed inputs."
+  },
+  "scorer": {
+    "title": "Cost adjustment and scoring",
+    "group": "Factorization",
+    "lead": "Terasweep retains statistics of the position path so that costs can be evaluated for several fee and slippage settings without scanning the bars again."
+  },
+  "profile": {
+    "title": "Profiling and constant signals",
+    "group": "Implementation",
+    "lead": "Profiling the original M1 runner identified scoring as the main expense in the million-row sample. The first change reduced the number of paths that required a scan."
+  },
+  "cache": {
+    "title": "Score storage and scheduling",
+    "group": "Implementation",
+    "lead": "A logical scoring key can refer to a shared constant-path result or a separately stored mixed-path result. The cache can retain every evaluated key without storing a full result for each one."
+  },
+  "simd": {
+    "title": "SIMD scoring",
+    "group": "Implementation",
+    "lead": "An AVX-512 vector holds eight FP64 values. Assigning those lanes to independent scoring jobs preserves the order of operations within each job."
+  },
+  "assembly": {
+    "title": "Handwritten AVX-512",
+    "group": "Implementation",
+    "lead": "Handwritten AVX-512 reduced the median standalone kernel time relative to tuned intrinsics. The difference was smaller in the complete process, where scoring occupied a small share of the time at one billion sampled rows."
+  },
+  "evidence": {
+    "title": "Validation and measurement",
+    "group": "Validation and scaling",
+    "lead": "The retained checks compare predictions and signals, intermediate scores and complete outputs. Each comparison establishes agreement at a specified boundary."
+  },
+  "funnel": {
+    "title": "Stage-by-stage timings",
+    "group": "Validation and scaling",
+    "lead": "The 1,014-row grid isolates the effect of reuse in the Rust runner. A separate sweep on the original 55-feature workload measures the later execution stages."
+  },
+  "scale": {
+    "title": "Sweep scaling",
+    "group": "Validation and scaling",
+    "lead": "The Apple M1 Max study measures the same scalar scoring contract across four models. The earlier AMD study records timings for the integrated Ridge stages as the sampled sweep grows to one billion rows."
+  },
+  "reproduce": {
+    "title": "Reproducibility",
+    "group": "Validation and scaling",
+    "lead": "The retained source, inputs and experiment records identify the implementations and workloads used for the reported measurements."
+  }
+}
