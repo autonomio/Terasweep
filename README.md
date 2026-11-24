@@ -13,7 +13,7 @@ settings on prepared data with the same runner.
 - Deterministic sampled sweeps reuse fits and base scores across trials that share their inputs.
 - Scalar and compact scoring, with Rust AVX-512 intrinsics and handwritten assembly on supported x86-64 Linux hosts. [Execution levels](docs/research/optimization-pipeline.md)
 - The single-model CLI and agent interface take the same settings and matrix files and return the same JSON receipt. [Agent interface](docs/agents.md)
-- Reproducible model cards and sweep measurements include the inputs, reference checks, and timing boundaries. [Single-run comparison](benchmarks/single-model/README.md) · [Sweep scaling](benchmarks/sweep-scaling/README.md)
+- Reproducible model cards and sweep measurements include the inputs, reference checks, and timing boundaries. [Single-run comparison](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/single-model/README.md) · [Sweep scaling](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/README.md)
 
 ## Install
 
@@ -65,14 +65,14 @@ make run LEVEL=compact RUNS=1000 OUT=runs/ridge-example
 
 Each card gives the measured input, output, parity result, single-run speed
 ratio, and sweep scaling through one billion sampled trials.
-[Single-run comparison](benchmarks/single-model/README.md) · [Sweep scaling](benchmarks/sweep-scaling/README.md)
+[Single-run comparison](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/single-model/README.md) · [Sweep scaling](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/README.md)
 
 ## Research and learning
 
 The benchmark record preserves the original Ridge experiments, including the
 optimization stages and large-scale AVX-512 measurements. The research notes
 connect those experiments to the current reference checks and matched sweeps
-for all four models. [Benchmark record](benchmarks/README.md) · [Research notes](docs/research/README.md)
+for all four models. [Benchmark record](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/README.md) · [Research notes](docs/research/README.md)
 
 The interactive performance course covers how to factor a sweep, validate its
 outputs, and interpret the measured and projected results.

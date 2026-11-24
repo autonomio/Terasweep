@@ -10,18 +10,15 @@ D=json.loads((S/'course-data.json').read_text(encoding='utf-8'))
 data=json.dumps(D,separators=(',',':'),ensure_ascii=False).replace('<','\\u003c').replace('\u2028','\\u2028').replace('\u2029','\\u2029')
 lessons = S / 'lessons'
 lesson_index = json.loads((lessons / 'index.json').read_text(encoding='utf-8'))
-receipt = S.parents[2] / 'benchmarks/sweep-scaling/results-m1-max.json'
-models = json.loads(receipt.read_text(encoding='utf-8'))['models']
+models = json.loads((S / 'matched-sweep-excerpt.json').read_text(encoding='utf-8'))
 cards = {'ridge': 'Ridge', 'dlinear': 'DLinear', 'lightgbm': 'LightGBM', 'tide': 'TiDE'}
 rows = []
 for name, label in cards.items():
-    result = models[name]
-    billion = next(row for row in result['scaling'] if row['trials'] == 1_000_000_000)
-    measured = billion['terasweep']
+    measured = models[name]
     rows.append(
         f'<tr data-model="{name}"><th scope="row"><a href="https://github.com/autonomio/Terasweep/blob/main/docs/models/{name}.md#sweep-scaling">{label}</a></th>'
         f'<td>{measured["seconds"]:.2f} s</td><td>{measured["unique_training_configs"]:,}</td>'
-        f'<td>{measured["score_cache_entries"]:,}</td><td>{result["projection_anchor_trials"]:,}</td></tr>'
+        f'<td>{measured["score_cache_entries"]:,}</td><td>{measured["reference_trials"]:,}</td></tr>'
     )
 load_mark = (S / 'load-terasweep.svg').read_text(encoding='utf-8').strip()
 load_line = f'<p class="course-load"><span class="sr-only">Load Terasweep, 8, 1</span>{load_mark}</p>'

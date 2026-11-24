@@ -7,7 +7,6 @@ import json
 import os
 import struct
 import subprocess
-import tarfile
 from importlib.metadata import version
 from itertools import product
 from pathlib import Path
@@ -20,26 +19,11 @@ from lightgbm.basic import _LIB as LIGHTGBM_LIBRARY
 from limen.sfd.reference_architecture.dlinear_regressor import DLinearRegressor
 from limen.sfd.reference_architecture.ridge_regressor import RidgeRegressor
 
-from prepare_return_inputs import ARCHIVE, prepare
-
 ROOT = Path(__file__).resolve().parents[1]
+FIXTURES = ROOT / "tests" / "fixtures"
 MATRIX_NAMES = ("train.bin", "test.bin", "price.bin")
 MODELS = ("ridge", "dlinear", "lightgbm", "tide")
 TOL = 1e-10
-
-
-def retained_fixture(work):
-    with tarfile.open(ARCHIVE, "r:gz") as archive:
-
-        def member(name):
-            return archive.extractfile(f"terasweep-integrated/common/{name}").read()
-
-        hashes = json.loads(member("provenance.json"))["sha256"]
-        for name in (*MATRIX_NAMES, "sweep.json", "plan.csv"):
-            data = member(name)
-            if hashlib.sha256(data).hexdigest() != hashes[name]:
-                raise ValueError(f"Retained Ridge fixture hash differs for {name}")
-            (work / name).write_bytes(data)
 
 
 def read_matrix(path):
@@ -347,16 +331,15 @@ def main():
     models = args.models or MODELS
     if any(model not in MODELS for model in models):
         parser.error(f"Choose models from {', '.join(MODELS)}")
+    for line in (FIXTURES / "SHA256SUMS").read_text().splitlines():
+        digest, name = line.split("  ", 1)
+        if hashlib.sha256((FIXTURES / name).read_bytes()).hexdigest() != digest:
+            raise ValueError(f"Retained regression fixture hash differs for {name}")
     checks = {"ridge": ridge, "dlinear": dlinear, "lightgbm": lightgbm, "tide": tide}
     with TemporaryDirectory(prefix="terasweep-parity-") as temporary:
         work = Path(temporary)
-        fixture = work / "retained"
-        if "ridge" in models:
-            fixture.mkdir()
-            retained_fixture(fixture)
-        returns = work / "returns"
-        if "dlinear" in models or "tide" in models:
-            prepare(returns)
+        fixture = FIXTURES / "ridge"
+        returns = FIXTURES / "returns"
         results = {}
         for model in dict.fromkeys(models):
             model_work = work / model

@@ -113,7 +113,7 @@ backtest mechanics differ. Native-relative ratios in the historical Ridge
 studies describe those application pipelines. The within-Rust stage comparisons
 hold the Rust calculation and output contract fixed.
 
-The [matched four-model benchmark](../../benchmarks/sweep-scaling/README.md)
+The [matched four-model benchmark](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/README.md)
 uses the same scalar scorer, trial order, and prepared data for the uncached
 reference and the Terasweep sweep. Its timings use the benchmark's own
 prepared-input boundary.
