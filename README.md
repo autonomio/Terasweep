@@ -75,8 +75,8 @@ connect those experiments to the current reference checks and matched sweeps
 for all four models. [Benchmark record](benchmarks/README.md) · [Research notes](docs/research/README.md)
 
 The interactive performance course covers how to factor a sweep, validate its
-outputs, and interpret the measured and projected results. Open the downloaded
-`docs/masterclass/index.html` in a browser to learn offline. [Performance learning](docs/masterclass/README.md)
+outputs, and interpret the measured and projected results.
+[Open the course](https://terasweep.autonom.io/) · [Offline copy and sources](docs/masterclass/README.md)
 
 ## Support
 

@@ -6,6 +6,9 @@ Linux build requires Rust 1.89 or newer.
 
 ## LightGBM
 
+On macOS, install the OpenMP runtime with `brew install libomp` if it is not
+already available. The LightGBM wheel loads `libomp.dylib` from the system.
+
 Install LightGBM 4.6.0 in a local Python environment and point the executable at
 its native library. Python is used here to locate the library.
 

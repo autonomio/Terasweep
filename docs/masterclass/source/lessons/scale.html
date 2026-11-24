@@ -9,6 +9,7 @@
 <tbody>@@MATCHED_SWEEP_ROWS@@</tbody>
 </table></div>
 <p>The reference refits each trial. With the input, trial order and scalar scoring held fixed, the measured reference prefixes produce predictions within the stated tolerances and agree exactly on signals and reported winners. LightGBM and TiDE also produce bit-identical predictions in these checks.</p>
+<p>At ten TiDE trials, Terasweep took 6.064 s and the uncached reference took 4.472 s. At 100 trials, the measured times were 3.650 s and 33.229 s, respectively.</p>
 <p>The Terasweep timings start after input loading and include backend setup and winner details. Beyond each largest measured reference prefix, the model card estimates the reference time from its measured per-trial cost plus one backend setup. <a href="https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/README.md">Method and calibration</a> · <a href="https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/results-m1-max.json">Measurement receipt</a></p>
 </section>
 <h2>Original Ridge scaling on AMD EPYC</h2>
