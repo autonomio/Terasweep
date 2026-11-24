@@ -21,6 +21,7 @@ pub struct FitOut {
     pub preds: Vec<f64>,
     pub mae: f64,
     pub fit_failed: bool,
+    fit_predict_seconds: f64,
 }
 
 type TrainKey = (usize, usize, u64, usize);
@@ -317,6 +318,7 @@ fn precompute_train_cache(
     let row_bytes = test
         .rows
         .checked_mul(8)
+        .and_then(|bytes| bytes.checked_add(8))
         .ok_or("TiDE prediction size overflow")?;
     if row_bytes.checked_mul(configs.len()) != Some(output.stdout.len()) {
         return Err("TiDE reference backend returned an unexpected prediction count".into());
@@ -326,7 +328,8 @@ fn precompute_train_cache(
         .into_iter()
         .zip(output.stdout.chunks_exact(row_bytes))
     {
-        let preds: Vec<_> = data
+        let fit_predict_seconds = f64::from_le_bytes(data[..8].try_into()?);
+        let preds: Vec<_> = data[8..]
             .chunks_exact(8)
             .map(|bytes| f64::from_le_bytes(bytes.try_into().unwrap()))
             .collect();
@@ -341,7 +344,23 @@ fn precompute_train_cache(
             preds,
             mae,
             fit_failed: false,
+            fit_predict_seconds,
         });
     }
     Ok(cache)
+}
+
+pub(crate) fn fit_one(
+    train: &Matrix,
+    test: &Matrix,
+    config: TrainConfig,
+    seed: u64,
+) -> Result<crate::FitPrediction, Box<dyn std::error::Error>> {
+    let fit = precompute_train_cache(seed, train, test, &[config])?
+        .pop()
+        .ok_or("TiDE returned no fit")?;
+    Ok(crate::FitPrediction {
+        predictions: fit.preds,
+        fit_predict_seconds: fit.fit_predict_seconds,
+    })
 }

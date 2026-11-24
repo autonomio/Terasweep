@@ -417,19 +417,27 @@ fn fit_from_stats(
     Ok(beta)
 }
 
-fn predict_and_mae(data: &Matrix, beta: &[f64]) -> (Vec<f64>, f64) {
-    let mut preds = Vec::with_capacity(data.rows);
-    let mut mae = 0.0;
-    for row in 0..data.rows {
-        let mut pred = beta[0];
-        let offset = row * data.cols;
-        for col in 0..data.cols {
-            pred += data.x[offset + col] * beta[col + 1];
+pub(crate) fn fit_one(train: &Matrix, test: &Matrix, config: TrainConfig) -> Result<Vec<f64>, Box<dyn std::error::Error>> {
+    let beta = fit_from_stats(&precompute_stats(train), config)?;
+    Ok(predict(test, &beta))
+}
+
+fn predict(data: &Matrix, beta: &[f64]) -> Vec<f64> {
+    let mut predictions = Vec::with_capacity(data.rows);
+    for row in data.x.chunks_exact(data.cols) {
+        let mut prediction = beta[0];
+        for (value, coefficient) in row.iter().zip(&beta[1..]) {
+            prediction += value * coefficient;
         }
-        mae += (pred - data.y[row]).abs();
-        preds.push(pred);
+        predictions.push(prediction);
     }
-    (preds, mae / data.rows as f64)
+    predictions
+}
+
+fn predict_and_mae(data: &Matrix, beta: &[f64]) -> (Vec<f64>, f64) {
+    let predictions = predict(data, beta);
+    let mae = results::mae(&predictions, &data.y);
+    (predictions, mae)
 }
 
 fn solve_spd_in_place(

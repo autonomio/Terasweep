@@ -1,0 +1,43 @@
+# Backend setup
+
+`make build` builds one Rust executable. Ridge and DLinear have no external
+model backend. Use GNU Make and Rust 1.63 or newer on ARM64 macOS. The x86-64
+Linux build requires Rust 1.89 or newer.
+
+## LightGBM
+
+Install LightGBM 4.6.0 in a local Python environment and point the executable at
+its native library. Python is used here to locate the library.
+
+```sh
+python3 -m venv runs/lightgbm-env
+runs/lightgbm-env/bin/python -m pip install 'lightgbm==4.6.0'
+export TERASWEEP_LIGHTGBM_LIB="$(runs/lightgbm-env/bin/python -c 'from lightgbm.basic import _LIB; print(_LIB._name)')"
+```
+
+## TiDE
+
+Use Python 3.12 with the pinned TensorFlow environment and the Google model
+source. Terasweep checks the source digest before fitting.
+
+```sh
+python3.12 -m venv runs/tide-reference
+runs/tide-reference/bin/python -m pip install 'tensorflow==2.16.2' \
+  'keras==3.15.1' 'numpy==1.26.4' 'tqdm==4.67.1'
+curl -fsSL https://raw.githubusercontent.com/google-research/google-research/5b09c22d73a9d35eb6c5d2a99b95677a45053466/tide/models.py \
+  -o runs/tide-reference/models.py
+export TERASWEEP_TIDE_PYTHON="$PWD/runs/tide-reference/bin/python"
+export TERASWEEP_TIDE_SOURCE="$PWD/runs/tide-reference/models.py"
+```
+
+## Return inputs
+
+DLinear and TiDE take a single observed return column and one next-return
+target per row, both in percentage points. To reproduce the recorded market
+fixture, install NumPy and Polars in a Python environment and run the input
+preparation command. It creates `train.bin` and `test.bin` plus the retained
+price file used in historical sweep tests.
+
+```sh
+python3 scripts/prepare_return_inputs.py runs/return-inputs
+```

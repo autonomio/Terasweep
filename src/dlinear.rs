@@ -518,19 +518,33 @@ fn fit_from_stats(
     Ok(beta)
 }
 
-fn predict_and_mae(data: &Matrix, features: &FeatureMatrix, beta: &[f64]) -> (Vec<f64>, f64) {
-    let mut preds = Vec::with_capacity(features.rows);
-    let mut mae = 0.0;
-    for row in 0..features.rows {
-        let mut pred = beta[0];
-        let offset = row * features.dims;
-        for col in 0..features.dims {
-            pred += features.x[offset + col] * beta[col + 1];
+pub(crate) fn fit_one(
+    train: &Matrix,
+    test: &Matrix,
+    config: TrainConfig,
+) -> Result<Vec<f64>, Box<dyn std::error::Error>> {
+    let design = build_design_stats(train, config.lookback, config.kernel);
+    let beta = fit_from_stats(&design, config)?;
+    let features = build_feature_matrix(test, config.lookback, config.kernel);
+    Ok(predict(&features, &beta))
+}
+
+fn predict(features: &FeatureMatrix, beta: &[f64]) -> Vec<f64> {
+    let mut predictions = Vec::with_capacity(features.rows);
+    for row in features.x.chunks_exact(features.dims) {
+        let mut prediction = beta[0];
+        for (value, coefficient) in row.iter().zip(&beta[1..]) {
+            prediction += value * coefficient;
         }
-        mae += (pred - data.y[row]).abs();
-        preds.push(pred);
+        predictions.push(prediction);
     }
-    (preds, mae / features.rows as f64)
+    predictions
+}
+
+fn predict_and_mae(data: &Matrix, features: &FeatureMatrix, beta: &[f64]) -> (Vec<f64>, f64) {
+    let predictions = predict(features, beta);
+    let mae = results::mae(&predictions, &data.y);
+    (predictions, mae)
 }
 
 fn solve_spd_in_place(

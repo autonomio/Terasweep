@@ -49,7 +49,7 @@ GBDT changed 1,683 signals in the initial eight-fit comparison. TiDE uses the pi
 model in a single-series, one-step configuration with no covariates and compares
 with an independent process supplied with the same pre-windowed observations.
 The three new comparisons also verify 1,000 sampled rows per model across both
-scalar and compact scoring. [Ridge experiment](../benchmarks/reports/terasweep_reverse_funnel_report.md#5-correctness-and-repeatability) · [Limen model contracts](https://docs.vaquum.fi/limen/reference/reference-architecture/) · [Official LightGBM regression](https://lightgbm.readthedocs.io/en/stable/pythonapi/lightgbm.LGBMRegressor.html) · [Upstream TiDE model](https://github.com/google-research/google-research/blob/5b09c22d73a9d35eb6c5d2a99b95677a45053466/tide/models.py)
+scalar and compact scoring. [Ridge experiment](../../benchmarks/reports/terasweep_reverse_funnel_report.md#5-correctness-and-repeatability) · [Limen model contracts](https://docs.vaquum.fi/limen/reference/reference-architecture/) · [Official LightGBM regression](https://lightgbm.readthedocs.io/en/stable/pythonapi/lightgbm.LGBMRegressor.html) · [Upstream TiDE model](https://github.com/google-research/google-research/blob/5b09c22d73a9d35eb6c5d2a99b95677a45053466/tide/models.py)
 
 All models share `train`, `score`, `bounds`, `compact`, `intrinsics` and
 `assembly` scoring levels. The `naive` and `stats` training controls currently

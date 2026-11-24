@@ -1,4 +1,6 @@
 mod dlinear;
+mod model;
+mod single_fit;
 mod lightgbm;
 mod lightgbm_api;
 mod results;
@@ -6,6 +8,7 @@ mod ridge;
 mod optimized;
 mod tide;
 
+use model::FitPrediction;
 use results::Prices;
 use std::env;
 use std::fs;
@@ -24,6 +27,9 @@ pub struct Matrix {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
+    if args.get(1).map_or(false, |arg| arg == "_fit") {
+        return single_fit::command(&args[2..]);
+    }
     if args.len() != 7 {
         return Err(
             "usage: terasweep <train.bin> <test.bin> <price.bin> <config.json> <runs> <out.json>"
@@ -76,11 +82,12 @@ fn read_matrix(bytes: &[u8]) -> Result<Matrix, Box<dyn std::error::Error>> {
         return Err("invalid ridge data magic".into());
     }
 
-    let rows = u64::from_le_bytes(bytes[8..16].try_into().unwrap()) as usize;
-    let cols = u64::from_le_bytes(bytes[16..24].try_into().unwrap()) as usize;
+    let rows = usize::try_from(u64::from_le_bytes(bytes[8..16].try_into()?))?;
+    let cols = usize::try_from(u64::from_le_bytes(bytes[16..24].try_into()?))?;
     let x_count = rows.checked_mul(cols).ok_or("rows*cols overflow")?;
     let expected_values = x_count.checked_add(rows).ok_or("value count overflow")?;
-    let expected = 24 + expected_values * F64_BYTES;
+    let expected = expected_values.checked_mul(F64_BYTES).and_then(|n| n.checked_add(24))
+        .ok_or("matrix byte count overflow")?;
     if bytes.len() != expected {
         return Err(format!(
             "matrix size {} does not match expected {}",

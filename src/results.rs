@@ -997,3 +997,7 @@ pub fn export_predictions<'a>(
     }
     out.flush()
 }
+
+pub(crate) fn mae(predictions: &[f64], target: &[f64]) -> f64 {
+    predictions.iter().zip(target).map(|(p, y)| (p - y).abs()).sum::<f64>() / target.len() as f64
+}
