@@ -1,25 +1,12 @@
-<div class="callout"><strong>The two scaling studies</strong>
-<p>The original Ridge study measures successive changes to the Rust implementation, including the AVX-512 kernels. The later study holds scalar scoring fixed between Terasweep and each uncached reference, and contains measured billion-trial Terasweep runs for Ridge, DLinear, LightGBM and TiDE on an M1 Max.</p><button class="ref" data-go="scale" type="button">Compare the two scaling studies<span aria-hidden="true"> ↗</span></button></div>
-<div class="hero-grid">
-<div>
-<div class="hero-rule"></div>
-<p>The original Rust runner already shared Ridge statistics, fitted predictions and scores, applied cost factors after scoring, and recomputed details only for the winners. Profiling led first to reuse of constant paths, followed by changes to cache storage and scheduling and the introduction of two AVX-512 kernels.</p>
-<p>The controlled comparisons measure the effect of these changes within the same runner. Comparing it with the uncached native Limen reference involves a separate timing and scoring boundary.</p>
-<button class="primary" data-go="reference">Ridge reference →</button>
+<p>Terasweep fits Ridge, DLinear, LightGBM regression, and TiDE on prepared numeric matrices. Its parameter sweep evaluates an ordered list of model settings using mean absolute error on a labeled validation split.</p>
+
+<div class="callout">
+  <h2>Two runs</h2>
+  <p>A single fit returns predictions in input order. A sweep ranks the settings and returns the winning predictions, validation MAE, and the number of distinct fits.</p>
+  <div class="small-buttons">
+    <button class="primary" data-go="reproduce">Run the example</button>
+    <button class="secondary" data-go="sweep">Explore fit reuse</button>
+  </div>
 </div>
-<div aria-label="Recorded billion-row execution summary" class="hero-terminal">
-<div class="terminal-head"><span class="live-dot"></span> Recorded run · AMD EPYC 9V74</div>
-<div class="terminal-command">$ TERASWEEP_LEVEL=assembly<br/><span>  … 1000000000 summary.json</span></div>
-<div class="hero-number">98.29<span>s</span></div>
-<p class="muted">One complete-process measurement for one billion sampled rows.</p>
-<div class="terminal-line"><span>Valid rows</span><strong>727,869,685</strong></div>
-<div class="terminal-line"><span>Cached failed-fit rows</span><strong>272,130,315</strong></div>
-<div class="terminal-line"><span>Large native runs</span><strong>Projected time</strong></div><button class="ref" data-lines="44-54" data-source="scaling" type="button">Run record<span aria-hidden="true"> ↗</span></button></div>
-</div>
-<div class="small-buttons">
-<button class="ref" data-lines="" data-source="original-ridge" type="button">Inherited ridge design<span aria-hidden="true"> ↗</span></button><button class="ref" data-lines="" data-source="original-results" type="button">Inherited scorer<span aria-hidden="true"> ↗</span></button><button class="ref" data-lines="" data-source="pipeline-doc" type="button">Integrated execution levels<span aria-hidden="true"> ↗</span></button>
-</div>
-<h2>The current package</h2>
-<p>Terasweep provides a command-line sweep and a single-model fitting interface through the CLI or local MCP server. The <a href="https://github.com/autonomio/Terasweep#examples">package examples</a> show how to run a fit and a sweep, and the <a href="https://github.com/autonomio/Terasweep#model-cards">model cards</a> identify each implementation and its reference.</p>
-<div class="legend-card"><span class="badge measured">MEASURED</span> Recorded experiment <span class="badge projected">PROJECTED</span> Conditional reference-cost model <span class="badge teaching">ILLUSTRATIVE LAB</span> Calculation with illustrative inputs</div>
-<p class="fine">The charts and illustrative calculations work offline. Progress and field notes are stored in this browser when local storage is available. The evidence room contains the historical reports and source snapshots.</p>
+
+<p>Tabular models accept multiple numeric features. DLinear and TiDE accept one observed series and predict the next value. Fit a candidate using training data, choose settings on validation data, and reserve a holdout for the chosen model.</p>

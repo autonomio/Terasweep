@@ -1,157 +1,98 @@
-import json,re,math,os,shutil
+"""Exercise the offline learning page in Chromium and record a QA summary."""
+import json
+import os
 from pathlib import Path
+
 from playwright.sync_api import sync_playwright
-ROOT=Path(__file__).resolve().parent; BUILD=ROOT/'qa-output'; BUILD.mkdir(exist_ok=True)
-checks=[]
-def check(name,cond,detail=None):
-    checks.append({'check':name,'passed':bool(cond),**({'detail':detail} if detail is not None else {})})
-    if not cond: print('FAIL:',name,detail)
-with sync_playwright() as p:
- b=p.chromium.launch(executable_path=os.environ.get('CHROMIUM_BIN') or shutil.which('chromium') or shutil.which('chromium-browser'),headless=True,args=['--no-sandbox'])
- page=b.new_page(viewport={'width':1440,'height':1100},device_scale_factor=1)
- errors=[];requests=[]
- page.on('pageerror',lambda e:errors.append(str(e)));page.on('request',lambda r:requests.append(r.url))
- # Render the complete offline payload in an opaque origin.
- page.set_content((ROOT/'index.html').read_text(),wait_until='load')
- page.wait_for_function('window.__MASTERCLASS_READY__ === true')
- check('Application initializes without JavaScript errors',not errors,errors)
- ids=page.evaluate('DATA.chapters.map(c=>c.id)')
- check('Thirteen chapters',len(ids)==13)
- for c in ids:
-  page.evaluate('(c)=>navigate(c)',c);page.wait_for_timeout(50)
-  active=page.locator('.lesson.active').count()
-  dims=page.evaluate('[document.documentElement.scrollWidth,innerWidth]')
-  check('Desktop layout '+c,active==1 and dims[0]<=dims[1],dims)
- check('All source references resolve',page.evaluate("$$('[data-source]').every(b=>!!DATA.sources[b.dataset.source])"))
- page.evaluate("navigate('brief')")
- page.get_by_role('button', name='Compare the two scaling studies').click()
- check('Introduction opens the scaling chapter',page.locator('#scale.active').count()==1)
- check('Matched scaling table shows all four models',page.locator('#matched-sweep-table tbody th').all_inner_texts()==['Ridge','DLinear','LightGBM','TiDE'])
- check('Matched table and historical explorer are both available',page.locator('#matched-sweeps').is_visible() and page.locator('#scale-lab').is_visible())
- page.evaluate("navigate('model')")
- g_before=page.locator('#ridge-metrics .metric').nth(1).inner_text()
- page.locator('#ridge-alpha').fill('2');page.locator('#ridge-alpha').dispatch_event('input')
- check('Ridge alpha changes without changing selected Gram statistic',g_before==page.locator('#ridge-metrics .metric').nth(1).inner_text())
- page.locator('#ridge-intercept').uncheck();check('Intercept switch selects a different Gram statistic',g_before!=page.locator('#ridge-metrics .metric').nth(1).inner_text())
- page.evaluate("navigate('sweep')");page.locator('[data-dep=cost]').click();check('Fee invalidates only downstream stages',page.locator('.dep-node.hot').count()==2)
- page.evaluate("navigate('scorer')");page.locator('#fee').fill('50');page.locator('#fee').dispatch_event('input');check('Cost lab updates',page.locator('#fee-out').inner_text()=='50')
- costvals=page.locator('#cost-output strong').all_text_contents();check('Cost direct/factored display agrees',costvals[0]==costvals[1],costvals)
- page.evaluate("navigate('profile')");page.locator('#bounds-rule').select_option('gt');page.locator('#bounds-max').click();check('Strict max threshold proves all off','All off' in page.locator('#bounds-answer').inner_text())
- page.locator('#bounds-rule').select_option('gte');check('Inclusive max keeps one signal',page.locator('.prediction-chip.active').count()==1)
- page.locator('#nonfinite').check();check('Non-finite vector has scalar fallback','Scalar fallback' in page.locator('#bounds-answer').inner_text())
- page.evaluate("navigate('cache')");check('Billion-row reference buffer bounded at 8 MiB','8.00 MiB' in page.locator('#memory-metrics').inner_text())
- page.evaluate("navigate('simd')");page.locator('#lane-next').click();check('Lane step advances to second bar','Bar 2 / 12' in page.locator('#lane-status').inner_text())
- page.locator('#lane-play').click();page.wait_for_timeout(980);check('Lane animation advances','Bar 3 / 12' in page.locator('#lane-status').inner_text());page.locator('#lane-play').click()
- page.locator('#lane-lab').scroll_into_view_if_needed();page.screenshot(path=str(BUILD/'desktop-lanes.png'))
- page.evaluate("navigate('assembly')")
- for k in ['registers','predicate','masks','accumulate']:
-  page.locator('[data-asm='+k+']').click();check('Assembly excerpt '+k,'Source marker not found' not in page.locator('#asm-code').inner_text())
- page.evaluate("navigate('evidence')");page.locator('[data-claim="0"][data-verdict="false"]').click();check('Claim clinic provides feedback','Correct.' in page.locator('.claim-feedback').first.inner_text())
- page.evaluate("navigate('funnel')")
- for k in ['common','large','paired']:
-  page.locator('[data-funnel='+k+']').click();check('Funnel '+k+' table renders',page.locator('#funnel-table tbody tr').count() in [9,5,2])
- page.evaluate("navigate('scale')")
- for view in ['wall','gain','memory','multiplier']:
-  page.locator('#scale-view').select_option(view);check('Scaling '+view+' finite plot',not re.search(r'NaN|Infinity',page.locator('#scale-chart svg').get_attribute('innerHTML') or page.locator('#scale-chart svg').inner_html()))
- for ref in ['sklearn','limen-cli','limen-prepared']:
-  page.locator('#scale-reference').select_option(ref);check('Scaling reference '+ref, bool(page.locator('#scale-warning').inner_text()))
- check('Full CLI mismatch label preserved',page.evaluate("$('#scale-reference').value='limen-cli';renderScaling();$('#scale-warning').textContent.includes('different, 13-feature')"))
- page.locator('#scale-reference').select_option('limen-prepared');page.locator('#scale-n').fill('4');page.locator('#scale-n').dispatch_event('input');page.locator('#scale-level').select_option('assembly')
- check('Billion-row measured elapsed rendered','98.29 s' in page.locator('#scale-readout').inner_text())
- check('Projection multiplier rendered','63,622' in page.locator('#scale-readout').inner_text())
- for l in ['original','bounds','compact','intrinsics']:page.locator('[data-series='+l+']').click()
- check('Series can be hidden independently',page.locator('#scale-chart polyline').count()==1)
- for l in ['original','bounds','compact','intrinsics']:page.locator('[data-series='+l+']').click()
- page.locator('#scale-lab').scroll_into_view_if_needed();page.screenshot(path=str(BUILD/'desktop-scaling.png'))
- page.locator('[data-amdahl=billion]').click();check('Amdahl saturation limit','1.003' in page.locator('#amdahl-output').inner_text())
- page.evaluate("navigate('reference')");page.locator('#reference [data-choice="1"]').click();check('Checkpoint feedback shows correct result','Yes.' in page.locator('#reference .quiz-feedback').inner_text())
- page.locator('#mastered').click();check('Chapter progress changes','1 / 13'==page.locator('#progress-count').inner_text())
- page.locator('#lesson-note').fill('The denominator is part of the claim.');page.evaluate("navigate('model');navigate('reference')");check('Notes retained while navigating',page.locator('#lesson-note').input_value()=='The denominator is part of the claim.')
- page.locator('[data-open=evidence]').first.click();check('Evidence modal opens',page.locator('#evidence-dialog').evaluate('(d)=>d.open'))
- page.evaluate("selectSource('simd-source','30-37')");check('Source line highlighting',page.locator('.source-line.highlight').count()==8)
- check('Pinned source uses the public repository',page.locator('#source-git').get_attribute('href').startswith('https://github.com/autonomio/Terasweep/blob/'))
- page.keyboard.press('Escape');check('Escape closes evidence modal',not page.locator('#evidence-dialog').evaluate('(d)=>d.open'))
- page.locator('[data-open=search]').click();page.locator('#course-search').fill('Cholesky');check('Course search returns lessons',page.locator('.search-result').count()>=2);page.locator('.search-result').first.click();check('Search result navigates and closes dialog',not page.locator('#search-dialog').evaluate('(d)=>d.open'))
- page.locator('[data-open=search]').click();page.locator('#course-search').fill('Four matched sweeps on Apple M1 Max');check('Search includes refreshed lesson text',page.locator('.search-result[data-go="scale"]').count()==1);page.keyboard.press('Escape')
- page.locator('[data-open=glossary]').click();check('Glossary terms populated',page.locator('#glossary-terms dt').count()>=20);page.keyboard.press('Escape')
- page.evaluate("navigate('reproduce')");page.locator('#capstone-text').fill('A billion sampled rows took 98.286879 seconds. Native Limen is a linear projection; assembly has a noisy single-pair limit. The Git snapshot preserves frozen inputs.');page.locator('#capstone-check').click();check('Capstone checklist checks all five concepts',page.locator('.capstone-checks .found').count()==5)
- with page.expect_download() as info:page.locator('#export-learning').click()
- d=info.value;path=BUILD/'test-learning-export.md';d.save_as(str(path));check('Notes export contains learner text','The denominator is part of the claim.' in path.read_text())
- page.locator('#theme-btn').click();check('Light theme switches',page.evaluate('document.documentElement.dataset.theme')=='light')
- page.evaluate("navigate('brief')");page.screenshot(path=str(BUILD/'desktop-light.png'))
- # All chapters in a narrow mobile viewport.
- page.set_viewport_size({'width':390,'height':844})
- for c in ids:
-  page.evaluate('(c)=>navigate(c)',c);page.wait_for_timeout(20)
-  dims=page.evaluate('[document.documentElement.scrollWidth,innerWidth]');check('Mobile no page overflow '+c,dims[0]<=dims[1],dims)
- page.locator('#menu-btn').click();check('Mobile chapter drawer opens',page.locator('#sidebar').evaluate('(d)=>d.classList.contains("open")'))
- page.locator('.nav-item[data-go=brief]').click();check('Mobile navigation dismisses drawer',not page.locator('#sidebar').evaluate('(d)=>d.classList.contains("open")'))
- page.locator('#theme-btn').click();page.wait_for_timeout(300);page.screenshot(path=str(BUILD/'mobile-home.png'))
- page.evaluate("navigate('simd')");page.locator('#lane-lab').scroll_into_view_if_needed();page.screenshot(path=str(BUILD/'mobile-lanes.png'))
- page.evaluate("navigate('scale')");page.locator('#scale-lab').scroll_into_view_if_needed();page.screenshot(path=str(BUILD/'mobile-scaling.png'))
- page.locator('[data-open=evidence]').first.click();page.evaluate("selectSource('asm-source')");page.screenshot(path=str(BUILD/'mobile-evidence.png'));page.keyboard.press('Escape')
- # Check individual readouts as well as the page boundary.
- page.evaluate('document.fonts.ready')
- readout_issues = []
- page.evaluate("""$('#ridge-intercept').checked=true; $('#ridge-alpha').value='-0.05'; renderRidge();
-                  $('#fee').value='0'; $('#slip').value='0'; renderCosts();
-                  $('#amdahl-p').value='99.99'; $('#amdahl-s').value='100'; renderAmdahl();""")
- for width in (320, 390, 521, 640, 861, 920, 1101, 1440):
-  page.set_viewport_size({'width': width, 'height': 900})
-  for chapter in ('reference', 'model', 'sweep', 'scorer', 'profile', 'cache', 'scale', 'evidence'):
-   page.evaluate('(id)=>navigate(id)', chapter)
-   issues = page.locator('.lesson.active :is(.metric, .stat-strip) strong').evaluate_all("""values => values.flatMap(value => {
-     const range = document.createRange();
-     range.selectNodeContents(value);
-     const [first, ...rest] = range.getClientRects();
-     const box = value.getBoundingClientRect();
-     const cell = value.parentElement;
-     const top = cell.getBoundingClientRect().top;
-     const misaligned = [...cell.parentElement.children].some(peer =>
-       Math.abs(peer.getBoundingClientRect().top - top) < 1 &&
-       Math.abs(peer.querySelector('strong').getBoundingClientRect().top - box.top) > 1);
-     return first && (rest.some(line => line.top !== first.top) ||
-       [first, ...rest].some(line => line.right > box.right + 1) || misaligned) ? [value.textContent] : [];
-   })""")
-   readout_issues.extend((width, chapter, value) for value in issues)
- check('Lab readouts stay on one line and align across cells', not readout_issues, readout_issues)
- page.evaluate("navigate('model')")
- check('Ridge axis label clears the tick labels', page.locator('#ridge-chart svg').evaluate("""svg => {
-   const label = svg.querySelector('.axis-label').getBBox();
-   const tick = svg.querySelector('.axis-label').previousElementSibling.getBBox();
-   return label.y > tick.y + tick.height;
- }"""))
- page.set_viewport_size({'width': 390, 'height': 844})
- page.evaluate("navigate('simd')")
- check('SIMD equity values fit in their own cells', page.locator('#lane-board tr:last-child td').evaluate_all("""cells => cells.every(cell => {
-   const range = document.createRange();
-   range.selectNodeContents(cell);
-   return range.getBoundingClientRect().width <= cell.clientWidth - 9;
- })"""))
- page.evaluate("navigate('scale')")
- chart = page.get_by_role('region', name='Scaling chart')
- chart.focus()
- page.keyboard.press('ArrowRight')
- page.wait_for_function("$('#scale-chart').scrollLeft > 0 || state.chapter !== 'scale'")
- check('Arrow keys scroll the scaling chart without changing chapter',
-       chart.evaluate('(chart)=>chart.scrollLeft > 0') and page.locator('#scale.active').count()==1)
- point = chart.locator('[data-plot-level="original"][data-plot-size="0"]')
- point.focus()
- page.keyboard.press('Enter')
- check('Keyboard can select a chart point and retain focus',
-       page.locator('#scale-n').input_value()=='0' and point.evaluate('(point)=>document.activeElement === point'))
- check('No browser JavaScript errors throughout',not errors,errors)
- check('No external requests while using the application',not requests,requests)
- fallback = b.new_page(viewport={'width': 1440, 'height': 1100}, java_script_enabled=False)
- fallback.set_content((ROOT/'index.html').read_text(), wait_until='load')
- reading = fallback.locator('#main').bounding_box()
- navigation = fallback.locator('#sidebar').bounding_box()
- check('Desktop reading column with JavaScript disabled',
-       fallback.locator('.lesson:visible').count() == 13 and
-       reading['x'] > navigation['x'] and reading['width'] > navigation['width'])
- b.close()
-report={'status':'PASS' if all(c['passed'] for c in checks) else 'FAIL','browser':'Chromium via Playwright','rendering_method':'set_content in an opaque origin with the self-contained page','desktop_viewport':[1440,1100],'mobile_viewport':[390,844],'checks':checks,'passed':sum(c['passed'] for c in checks),'total':len(checks),'limitations':['The opaque origin exercises in-session notes and the no-storage fallback. Persistent localStorage across browser restarts is outside this check.','Browser checks exercise the learning application using retained benchmark evidence.']}
-(ROOT/'qa-report.json').write_text(json.dumps(report,indent=2)+'\n')
-print(json.dumps({k:v for k,v in report.items() if k!='checks'},indent=2))
-if report['status'] != 'PASS':
- raise SystemExit(1)
+
+ROOT = Path(__file__).resolve().parent
+checks = []
+
+
+def check(name, result):
+    assert result, name
+    checks.append(name)
+
+
+def main():
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(executable_path=os.environ.get("CHROMIUM_BIN"))
+        page = browser.new_page(accept_downloads=True)
+        errors, network = [], []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.on("request", lambda request: network.append(request.url))
+        page.set_content((ROOT / "index.html").read_text(encoding="utf-8"), wait_until="load")
+        page.wait_for_function("window.__MASTERCLASS_READY__ === true")
+        chapters = page.evaluate("DATA.chapters.map(chapter => chapter.id)")
+        for width in (320, 390, 768, 1440):
+            page.set_viewport_size({"width": width, "height": 900})
+            for chapter in chapters:
+                page.evaluate("(id) => navigate(id)", chapter)
+                check(f"{chapter} at {width}px", page.evaluate(
+                    """() => document.querySelectorAll('.lesson.active').length === 1 &&
+                        document.documentElement.scrollWidth <= innerWidth"""
+                ))
+                check(f"{chapter} readouts fit at {width}px", page.locator(
+                    ".lesson.active .metric strong"
+                ).evaluate_all("""nodes => nodes.every(node => {
+                    const range = document.createRange();
+                    range.selectNodeContents(node);
+                    const box = node.getBoundingClientRect();
+                    return [...range.getClientRects()].every(rect => rect.right <= box.right + 1);
+                })"""))
+
+        page.evaluate("navigate('model')")
+        stats = page.locator("#ridge-metrics .metric").nth(1)
+        gram = stats.inner_text()
+        page.locator("#ridge-alpha").fill("2")
+        page.locator("#ridge-alpha").dispatch_event("input")
+        check("Ridge reuses the Gram statistic across regularization settings", stats.inner_text() == gram)
+        page.locator("#ridge-intercept").uncheck()
+        check("The intercept switch uses the raw statistic", stats.inner_text() != gram)
+
+        page.evaluate("navigate('sweep')")
+        cells = page.locator("#reuse-metrics strong")
+        check("Four settings and 100 entries need four fits", cells.all_text_contents() == ["100", "4", "96"])
+        page.locator("#fit-repeats").fill("1")
+        page.locator("#fit-repeats").dispatch_event("input")
+        check("Distinct entries all need fits", cells.all_text_contents() == ["4", "4", "0"])
+        page.locator('[data-source="sweep"]').last.click()
+        check("Evidence opens with current sweep code", "fn sweep" in page.locator("#source-text").inner_text())
+        check("Evidence links to current package source", page.locator("#source-git").get_attribute("href").endswith("/main/src/sweep.rs"))
+        page.keyboard.press("Escape")
+
+        page.locator('[data-open="search"]').click()
+        page.locator("#course-search").fill("paired")
+        check("Search responds to unmatched queries", page.locator(".search-result").count() == 0)
+        page.locator("#course-search").fill("upstream")
+        page.locator('.search-result[data-go="reference"]').click()
+        check("Search opens the chapter", page.locator("#reference.active").is_visible())
+        page.locator('#reference [data-choice="1"]').click()
+        check("Reference quiz gives feedback", page.locator(".quiz-feedback").inner_text().startswith("Yes."))
+        page.locator("#mastered").click()
+        check("Progress counts understood chapters", page.locator("#progress-count").inner_text() == f"1 / {len(chapters)}")
+        page.locator("#lesson-note").fill("The validation split ranks a model.")
+        page.evaluate("navigate('model'); navigate('reference')")
+        check("Notes survive navigation", page.locator("#lesson-note").input_value() == "The validation split ranks a model.")
+        with page.expect_download() as capture:
+            page.locator("#export-notes-top").click()
+        download = capture.value
+        check("Export contains written notes", "The validation split ranks a model." in download.path().read_text())
+        page.locator("#theme-btn").click()
+        check("Theme changes", page.evaluate("document.documentElement.dataset.theme") == "light")
+
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.locator("#menu-btn").click()
+        page.locator('.nav-item[data-go="brief"]').click()
+        check("Mobile drawer closes after navigation", page.locator("#menu-btn").get_attribute("aria-expanded") == "false")
+        check("No browser errors", not errors)
+        check("Works offline without network requests", not network)
+        browser.close()
+
+    report = {"status": "PASS", "chapters": len(chapters), "checks": checks}
+    (ROOT / "qa-report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    print(f"{len(checks)} browser checks passed")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,391 +1,171 @@
-"""Compare Terasweep predictions with upstream references on retained inputs."""
-
+"""Check single fits and ordered sweeps on public regression fixtures."""
 import argparse
-import csv
-import hashlib
 import json
 import os
 import struct
 import subprocess
-from functools import partial
-from importlib.metadata import version
 from itertools import product
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import numpy as np
-import polars as pl
 from lightgbm import LGBMRegressor
-from lightgbm.basic import _LIB as LIGHTGBM_LIBRARY
+from lightgbm.basic import _LIB
 from limen.sfd.reference_architecture.dlinear_regressor import DLinearRegressor
 from limen.sfd.reference_architecture.ridge_regressor import RidgeRegressor
 
-ROOT = Path(__file__).resolve().parents[1]
-FIXTURES = ROOT / "tests" / "fixtures"
-MATRIX_NAMES = ("train.bin", "test.bin", "price.bin")
-MODELS = ("ridge", "dlinear", "lightgbm", "tide")
-TOL = 1e-10
+from model_run import DEFAULT_BINARY, ROOT, fit, load_matrix, validate_request
+
+FIXTURES = ROOT / "tests/fixtures"
+DATASET = {"ridge": "concrete", "lightgbm": "abalone", "dlinear": "bike", "tide": "bike"}
+TOLERANCE = 1e-10
 
 
-def read_matrix(path):
-    data = path.read_bytes()
-    magic, rows, cols = struct.unpack_from("<8sQQ", data)
-    if magic != b"RIDGE001" or len(data) != 24 + rows * (cols + 1) * 8:
-        raise ValueError(f"Invalid matrix {path}")
-    values = np.frombuffer(data, dtype="<f8", offset=24)
-    return values[: rows * cols].reshape(rows, cols), values[rows * cols :]
-
-
-def run(binary, work, data, config, rows, plan=None):
-    config_file = work / "config.json"
-    config_file.write_text(json.dumps(config))
-    env = dict(os.environ)
-    env.pop("TERASWEEP_PLAN", None)
-    if config.get("model") == "lightgbm":
-        env.setdefault("TERASWEEP_LIGHTGBM_LIB", LIGHTGBM_LIBRARY._name)
-    if plan is not None:
-        env["TERASWEEP_PLAN"] = str(plan)
-
-    summaries = {}
-    for level in ("compact", "score"):
-        export = work / f"{level}-predictions"
-        summary = work / f"{level}-summary.json"
-        env.update(TERASWEEP_LEVEL=level, TERASWEEP_EXPORT_PREDICTIONS=str(export))
-        subprocess.run(
-            [
-                binary,
-                *(data / name for name in MATRIX_NAMES),
-                config_file,
-                str(rows),
-                summary,
-            ],
-            env=env,
-            check=True,
-        )
-        summaries[level] = json.loads(summary.read_text())
-
-    def stable(summary):
-        return {
-            key: value
-            for key, value in summary.items()
-            if not key.startswith("hot_loop_")
-        }
-
-    if stable(summaries["compact"]) != stable(summaries["score"]):
-        raise ValueError(
-            f"Compact and scalar sweep summaries differ for {config.get('model', 'ridge')}"
-        )
-    if (work / "compact-predictions").read_bytes() != (
-        work / "score-predictions"
-    ).read_bytes():
-        raise ValueError(
-            f"Prediction exports differ across scoring levels for {config.get('model', 'ridge')}"
-        )
-    return work / "compact-predictions", summaries["compact"]
-
-
-def compare(params, actual, expected):
-    actual = np.asarray(actual, dtype=np.float64)
-    expected = np.asarray(expected, dtype=np.float64)
-    if actual.shape != expected.shape or not actual.size:
-        raise ValueError(
-            f"Prediction shape differs for {params}: {actual.shape} vs {expected.shape}"
-        )
-    if not (np.isfinite(actual).all() and np.isfinite(expected).all()):
-        raise ValueError(f"Nonfinite predictions for {params}")
-    close = np.isclose(actual, expected, rtol=TOL, atol=TOL)
+def settings():
     return {
-        "params": params,
-        "predictions": actual.size,
-        "max_abs_difference": float(np.max(np.abs(actual - expected))),
-        "bit_identical": np.array_equal(
-            actual.view(np.uint64), expected.view(np.uint64)
-        ),
-        "predictions_outside_tolerance": int(np.count_nonzero(~close)),
-        "signal_mismatches": int(np.count_nonzero((actual > 0) != (expected > 0))),
+        "ridge": [
+            dict(alpha=alpha, fit_intercept=True, solver_eps=0.0)
+            for alpha in (1.0, 0.01, 0.1, 0.5, 3.0, 10.0, 50.0, 200.0)
+        ],
+        "lightgbm": [
+            dict(learning_rate=rate, num_trees=trees, num_leaves=leaves,
+                 max_bins=63, lambda_l2=0.5, min_data_in_leaf=15, seed=375)
+            for rate, trees, leaves in product([0.07, 0.14], [20, 45], [9, 21])
+        ],
+        "dlinear": [
+            dict(alpha=alpha, lookback=lookback, kernel=kernel, solver_eps=0.0)
+            for alpha, lookback, kernel in product([0.25, 4.0], [7, 14], [3, 7])
+        ],
+        "tide": [
+            dict(lookback=lookback, hidden_width=width, learning_rate=0.004, epochs=epochs, seed=375)
+            for lookback, width, epochs in product([7, 14], [8, 16], [2, 4])
+        ],
     }
 
 
-def comparison_result(reference, cases):
-    passed = all(
-        not (case["predictions_outside_tolerance"] or case["signal_mismatches"])
-        for case in cases
-    )
-    return {
-        "status": "PASS" if passed else "FAIL",
-        "reference": reference,
-        "cases": cases,
-    }
+def matrix(path):
+    data, _ = load_matrix(path)
+    _, rows, columns = struct.unpack_from("<8sQQ", data)
+    x, y = np.split(np.frombuffer(data, dtype="<f8", offset=24), [rows * columns])
+    return x.reshape(rows, columns), y
 
 
-def ridge(binary, work, fixture):
-    plan = fixture / "plan.csv"
-    with plan.open(newline="") as stream:
-        rows = list(csv.DictReader(stream))
-    grid = {
-        (float(row["alpha"]), row["fit_intercept"] == "true", float(row["solver_eps"]))
-        for row in rows
-    }
-    config = json.loads((fixture / "sweep.json").read_text())
-    export, summary = run(binary, work, fixture, config, len(rows), plan)
-    if summary["rows"] != len(rows) or summary["failed_rows"]:
-        raise ValueError("Ridge did not complete the retained native plan")
-    train_x, train_y = read_matrix(fixture / "train.bin")
-    test_x, _ = read_matrix(fixture / "test.bin")
-    data = {"x_train": train_x, "y_train": train_y, "x_test": test_x}
-    blob = export.read_bytes()
-    magic, count = struct.unpack_from("<8sQ", blob)
-    if magic != b"PRED0001" or count != len(grid):
-        raise ValueError("Invalid Ridge export header for the retained plan")
-    cases = []
-    offset = 16
-    for _ in range(count):
-        alpha, intercept, eps, failed, size = struct.unpack_from("<dQdQQ", blob, offset)
-        config_key = (alpha, bool(intercept), eps)
-        if failed or config_key not in grid or size != len(test_x):
-            raise ValueError(f"Missing or invalid Ridge fit for {config_key}")
-        grid.remove(config_key)
-        offset += 40
-        actual = np.frombuffer(blob, dtype="<f8", count=size, offset=offset)
-        offset += size * 8
-        params = {"alpha": alpha, "fit_intercept": bool(intercept)}
-        expected = RidgeRegressor().train(data, **params).predict(data)["_preds"]
-        cases.append(compare(params, actual, expected))
-    if grid or offset != len(blob):
-        raise ValueError("Ridge export did not exactly cover the retained plan")
-    return comparison_result("Limen RidgeRegressor (scikit-learn)", cases)
+def windows(x, lookback):
+    history = np.pad(x[:, 0], (lookback - 1, 0), mode="edge")
+    return np.lib.stride_tricks.sliding_window_view(history, lookback)
 
 
-def json_fits(path, axes):
-    expected = set(product(*axes.values()))
-    with path.open() as stream:
-        for line in stream:
-            fit = json.loads(line)
-            params = fit["params"]
-            if params.keys() != axes.keys():
-                raise ValueError(f"Unexpected fit parameters: {params}")
-            key = tuple(params[name] for name in axes)
-            if fit["fit_failed"] or key not in expected:
-                raise ValueError(f"Missing or invalid fit for {params}")
-            expected.remove(key)
-            yield params, fit["predictions"]
-    if expected:
-        raise ValueError(f"Missing exported fits: {expected}")
+def reference(kind, params, train, validation, work):
+    x, y = train
+    xt, _ = validation
+    data = {"x_train": x, "y_train": y, "x_test": xt}
+    if kind == "ridge":
+        model = RidgeRegressor().train(data, alpha=params["alpha"], fit_intercept=True)
+        return model.predict(data)["_preds"]
+    if kind == "dlinear":
+        import polars as pl
 
-
-def lag_frame(returns, lookback):
-    indices = np.arange(len(returns))
-    return pl.DataFrame(
-        {
-            f"ret_1_lag_{lag}": returns[np.maximum(indices - lag, 0)]
-            for lag in range(lookback - 1, -1, -1)
-        }
-    )
-
-
-def dlinear(binary, work, fixture):
-    train_x, train_y = read_matrix(fixture / "train.bin")
-    test_x, _ = read_matrix(fixture / "test.bin")
-    train_x, test_x = train_x[:, 0], test_x[:, 0]
-    config = json.loads((ROOT / "configs/dlinear.json").read_text())
-    alphas = config["alphas"]
-    axes = {
-        "alpha": np.logspace(
-            alphas["log_min"], alphas["log_max"], alphas["count"]
-        ).tolist(),
-        "fit_intercept": config["fit_intercept"],
-        "solver_eps": config["solver_eps"],
-        "lookback": config["lookbacks"],
-        "kernel": config["kernels"],
-    }
-    export, _ = run(binary, work, fixture, config, 1000)
-    cases = []
-    for params, actual in json_fits(export, axes):
-        data = {
-            "x_train": lag_frame(train_x, params["lookback"]),
-            "y_train": train_y,
-            "x_test": lag_frame(test_x, params["lookback"]),
-        }
-        expected = (
-            DLinearRegressor()
-            .train(data, alpha=params["alpha"], kernel_size=params["kernel"])
-            .predict(data)["_preds"]
-        )
-        cases.append(compare(params, actual, expected))
-    result = comparison_result(
-        "Limen DLinearRegressor (univariate return windows)", cases
-    )
-    result["scope"] = (
-        "Identical single-channel causal return windows with fitted intercept."
-    )
-    return result
-
-
-def lightgbm(binary, work, _fixture, *, quick=False):
-    data = ROOT / "data"
-    train_x, train_y = read_matrix(data / "train.bin")
-    test_x, _ = read_matrix(data / "test.bin")
-    config = json.loads((ROOT / "configs/lightgbm.json").read_text())
-    axes = {
-        key: config[key]
-        for key in (
-            "learning_rate",
-            "num_trees",
-            "num_leaves",
-            "max_bins",
-            "lambda_l2",
-            "min_data_in_leaf",
-        )
-    }
-    if quick:
-        axes = {key: values[:1] for key, values in axes.items()}
-        config.update(axes)
-    export, _ = run(binary, work, data, config, 1000)
-    cases = []
-    for params, actual in json_fits(export, axes):
-        model = LGBMRegressor(
-            objective="regression",
-            learning_rate=params["learning_rate"],
-            n_estimators=params["num_trees"],
-            num_leaves=params["num_leaves"],
-            max_bin=params["max_bins"],
-            reg_lambda=params["lambda_l2"],
-            min_child_samples=params["min_data_in_leaf"],
-            n_jobs=1,
-            deterministic=True,
-            force_col_wise=True,
-            random_state=config["seed"] & (2**31 - 1),
-            verbosity=-1,
-        )
-        model.fit(train_x, train_y)
-        expected = model.booster_.predict(test_x, num_threads=1)
-        cases.append(compare(params, actual, expected))
-    result = comparison_result(
-        "Official LightGBM LGBMRegressor (continuous return target)", cases
-    )
-    if any(not case["bit_identical"] for case in cases):
-        result["status"] = "FAIL"
-    return result
-
-
-def tide(binary, work, fixture, *, quick=False):
-    config = json.loads((ROOT / "configs/tide.json").read_text())
-    if quick:
-        config["lookbacks"] = config["lookbacks"][-1:]
-        for key in ("hidden_width", "learning_rate", "epochs"):
-            config[key] = config[key][:1]
-    axes = {
-        "lookback": config["lookbacks"],
-        "hidden_width": config["hidden_width"],
-        "learning_rate": config["learning_rate"],
-        "epochs": config["epochs"],
-    }
-    export, _ = run(binary, work, fixture, config, 1000)
-    train_x, train_y = read_matrix(fixture / "train.bin")
-    test_x, _ = read_matrix(fixture / "test.bin")
-    inputs_path = work / "windows.npz"
-    predictions_path = work / "reference.bin"
-    env = dict(
-        os.environ,
-        TF_USE_LEGACY_KERAS="0",
-        OMP_NUM_THREADS="1",
-        TF_NUM_INTEROP_THREADS="1",
-        TF_NUM_INTRAOP_THREADS="1",
-    )
-
-    def windows(x, lookback):
-        x = x[:, 0].astype(np.float32)
-        padded = np.pad(x, (lookback - 1, 0), mode="edge")
-        return np.lib.stride_tricks.sliding_window_view(padded, lookback)
-
-    cases = []
-    for params, actual in json_fits(export, axes):
         lookback = params["lookback"]
-        np.savez(
-            inputs_path,
-            train=windows(train_x, lookback),
-            test=windows(test_x, lookback),
-            labels=train_y.astype(np.float32),
-        )
-        settings = dict(params, seed=config["seed"] & (2**31 - 1))
-        subprocess.run(
-            [
-                env["TERASWEEP_TIDE_PYTHON"],
-                "-B",
-                ROOT / "scripts/tide_reference_predictions.py",
-                env["TERASWEEP_TIDE_SOURCE"],
-                inputs_path,
-                json.dumps(settings),
-                predictions_path,
-            ],
-            env=env,
-            check=True,
-        )
-        expected = np.fromfile(predictions_path, dtype="<f8")
-        cases.append(compare(params, actual, expected))
-    result = comparison_result(
-        "Google Research TiDE (one-step return, no covariates)", cases
+        for key, values in (("x_train", x), ("x_test", xt)):
+            channels = windows(values, lookback)
+            data[key] = pl.DataFrame({
+                f"ret_1_lag_{lag}": channels[:, column]
+                for column, lag in enumerate(range(lookback - 1, -1, -1))
+            })
+        model = DLinearRegressor().train(data, alpha=params["alpha"], kernel_size=params["kernel"])
+        return model.predict(data)["_preds"]
+    if kind == "lightgbm":
+        model = LGBMRegressor(
+            objective="regression", learning_rate=params["learning_rate"],
+            n_estimators=params["num_trees"], num_leaves=params["num_leaves"],
+            max_bin=params["max_bins"], reg_lambda=params["lambda_l2"],
+            min_child_samples=params["min_data_in_leaf"], random_state=params["seed"],
+            n_jobs=1, deterministic=True, force_col_wise=True, verbosity=-1,
+        ).fit(x, y)
+        return model.booster_.predict(xt, num_threads=1)
+
+    input_path, output_path = work / "windows.npz", work / "reference.bin"
+    lookback = params["lookback"]
+    np.savez(
+        input_path,
+        train=windows(x.astype("float32"), lookback), labels=y.astype("float32"),
+        test=windows(xt.astype("float32"), lookback),
     )
-    if any(not case["bit_identical"] for case in cases):
-        result["status"] = "FAIL"
-    return result
+    env = dict(
+        os.environ, TF_USE_LEGACY_KERAS="0", OMP_NUM_THREADS="1",
+        TF_NUM_INTEROP_THREADS="1", TF_NUM_INTRAOP_THREADS="1",
+    )
+    subprocess.run(
+        [env["TERASWEEP_TIDE_PYTHON"], "-B", ROOT / "scripts/tide_reference_predictions.py",
+         env["TERASWEEP_TIDE_SOURCE"], input_path, json.dumps(params), output_path],
+        env=env, check=True,
+    )
+    return np.fromfile(output_path, dtype="<f8")
+
+
+def bits_equal(a, b):
+    return np.array_equal(a.view("u8"), b.view("u8"))
+
+
+def audit(kind, cases, binary, work):
+    fixture = FIXTURES / DATASET[kind]
+    train, validation = (str(fixture / f"{part}.bin") for part in ("train", "validation"))
+    train_data, validation_data = matrix(train), matrix(validation)
+    predictions, references, plan = [], [], []
+    for params in cases:
+        request = dict(version=1, train=train, test=validation, model=dict(kind=kind, **params))
+        predictions.append(fit(request, binary)["predictions"])
+        references.append(reference(kind, params, train_data, validation_data, work))
+        plan.append(" ".join(validate_request(request)))
+
+    actual = np.asarray(predictions, dtype="float64")
+    expected = np.asarray(references, dtype="float64")
+    np.testing.assert_allclose(actual, expected, atol=TOLERANCE, rtol=TOLERANCE)
+    if any(f"{a:.10f}" != f"{b:.10f}" for a, b in zip(actual.flat, expected.flat)):
+        raise AssertionError(f"{kind} predictions differ at ten decimal places")
+    bit_equal = bits_equal(actual, expected)
+    if kind in ("lightgbm", "tide") and not bit_equal:
+        raise AssertionError(f"{kind} predictions differ from upstream at the bit level")
+
+    plan_path = work / "models.txt"
+    plan_path.write_text("\n".join([*plan, plan[0]]) + "\n", encoding="utf-8")
+    receipt = json.loads(subprocess.check_output(
+        [binary, "sweep", train, validation, plan_path], text=True,
+    ))
+    expected_mae = np.abs(expected - validation_data[1]).mean(axis=1)
+    winner = int(np.argmin(expected_mae))
+    assert receipt["trials"] == len(plan) + 1
+    assert receipt["unique_fits"] == len(plan)
+    assert receipt["best"]["trial"] == winner
+    assert bits_equal(np.asarray(receipt["best"]["predictions"]), actual[winner])
+    np.testing.assert_allclose(receipt["best"]["mae"], expected_mae[winner], atol=TOLERANCE, rtol=TOLERANCE)
+
+    return {
+        "fits": len(cases), "predictions": actual.size, "bit_identical": bit_equal,
+        "max_abs_error": float(np.abs(actual - expected).max()),
+        "sweep": {key: receipt[key] for key in ("trials", "unique_fits", "elapsed_seconds")},
+        "best_trial": winner, "validation_mae": receipt["best"]["mae"],
+    }
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("models", nargs="*", metavar="MODEL", help=", ".join(MODELS))
-    parser.add_argument("--binary", type=Path, default=ROOT / "target/terasweep-funnel")
-    parser.add_argument(
-        "--quick", action="store_true", help="use one LightGBM and one TiDE fit"
-    )
+    parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
+    parser.add_argument("--quick", action="store_true", help="check one setting per model")
+    parser.add_argument("models", nargs="*", metavar="MODEL", help=", ".join(DATASET))
     args = parser.parse_args()
-    models = args.models or MODELS
-    if any(model not in MODELS for model in models):
-        parser.error(f"Choose models from {', '.join(MODELS)}")
-    for line in (FIXTURES / "SHA256SUMS").read_text().splitlines():
-        digest, name = line.split("  ", 1)
-        if hashlib.sha256((FIXTURES / name).read_bytes()).hexdigest() != digest:
-            raise ValueError(f"Retained regression fixture hash differs for {name}")
-    checks = {
-        "ridge": ridge,
-        "dlinear": dlinear,
-        "lightgbm": partial(lightgbm, quick=args.quick),
-        "tide": partial(tide, quick=args.quick),
-    }
-    with TemporaryDirectory(prefix="terasweep-parity-") as temporary:
-        work = Path(temporary)
-        fixture = FIXTURES / "ridge"
-        returns = FIXTURES / "returns"
-        results = {}
-        for model in dict.fromkeys(models):
-            model_work = work / model
-            model_work.mkdir()
-            inputs = returns if model in ("dlinear", "tide") else fixture
-            results[model] = checks[model](args.binary.resolve(), model_work, inputs)
-    print(
-        json.dumps(
-            {
-                "versions": {
-                    package: version(package)
-                    for package in (
-                        "vaquum-limen",
-                        "numpy",
-                        "polars",
-                        "pyarrow",
-                        "scipy",
-                        "scikit-learn",
-                        "lightgbm",
-                    )
-                },
-                "rtol": TOL,
-                "atol": TOL,
-                "results": results,
-            },
-            indent=2,
-        )
-    )
-    return int(any(result["status"] != "PASS" for result in results.values()))
+    models = args.models or list(DATASET)
+    if set(models) - DATASET.keys():
+        parser.error("unsupported model name")
+    os.environ.setdefault("TERASWEEP_LIGHTGBM_LIB", _LIB._name)
+
+    results = {}
+    with TemporaryDirectory() as temp:
+        for model in models:
+            cases = settings()[model]
+            results[model] = audit(model, cases[:1] if args.quick else cases, args.binary.resolve(), Path(temp))
+    print(json.dumps(results, indent=2))
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

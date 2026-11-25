@@ -1,3 +1,6 @@
-# Preserve frozen fixture bytes on every platform.
-data/*.bin -text
-tests/fixtures/** -text
+# Preserve fixture bytes on every platform.
+tests/fixtures/**/*.bin -text
+# Review the learning page in its source files. CI checks the generated HTML.
+docs/masterclass/index.html linguist-generated=true -diff
+docs/masterclass/source/*-data.json linguist-generated=true -diff
+docs/masterclass/qa-report.json linguist-generated=true -diff

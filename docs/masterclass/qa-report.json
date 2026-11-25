@@ -1,483 +1,70 @@
 {
   "status": "PASS",
-  "browser": "Chromium via Playwright",
-  "rendering_method": "set_content in an opaque origin with the self-contained page",
-  "desktop_viewport": [
-    1440,
-    1100
-  ],
-  "mobile_viewport": [
-    390,
-    844
-  ],
+  "chapters": 6,
   "checks": [
-    {
-      "check": "Application initializes without JavaScript errors",
-      "passed": true,
-      "detail": []
-    },
-    {
-      "check": "Thirteen chapters",
-      "passed": true
-    },
-    {
-      "check": "Desktop layout brief",
-      "passed": true,
-      "detail": [
-        1440,
-        1440
-      ]
-    },
-    {
-      "check": "Desktop layout reference",
-      "passed": true,
-      "detail": [
-        1440,
-        1440
-      ]
-    },
-    {
-      "check": "Desktop layout model",
-      "passed": true,
-      "detail": [
-        1440,
-        1440
-      ]
-    },
-    {
-      "check": "Desktop layout sweep",
-      "passed": true,
-      "detail": [
-        1440,
-        1440
-      ]
-    },
-    {
-      "check": "Desktop layout scorer",
-      "passed": true,
-      "detail": [
-        1440,
-        1440
-      ]
-    },
-    {
-      "check": "Desktop layout profile",
-      "passed": true,
-      "detail": [
-        1440,
-        1440
-      ]
-    },
-    {
-      "check": "Desktop layout cache",
-      "passed": true,
-      "detail": [
-        1440,
-        1440
-      ]
-    },
-    {
-      "check": "Desktop layout simd",
-      "passed": true,
-      "detail": [
-        1440,
-        1440
-      ]
-    },
-    {
-      "check": "Desktop layout assembly",
-      "passed": true,
-      "detail": [
-        1440,
-        1440
-      ]
-    },
-    {
-      "check": "Desktop layout evidence",
-      "passed": true,
-      "detail": [
-        1440,
-        1440
-      ]
-    },
-    {
-      "check": "Desktop layout funnel",
-      "passed": true,
-      "detail": [
-        1440,
-        1440
-      ]
-    },
-    {
-      "check": "Desktop layout scale",
-      "passed": true,
-      "detail": [
-        1440,
-        1440
-      ]
-    },
-    {
-      "check": "Desktop layout reproduce",
-      "passed": true,
-      "detail": [
-        1440,
-        1440
-      ]
-    },
-    {
-      "check": "All source references resolve",
-      "passed": true
-    },
-    {
-      "check": "Introduction opens the scaling chapter",
-      "passed": true
-    },
-    {
-      "check": "Matched scaling table shows all four models",
-      "passed": true
-    },
-    {
-      "check": "Matched table and historical explorer are both available",
-      "passed": true
-    },
-    {
-      "check": "Ridge alpha changes without changing selected Gram statistic",
-      "passed": true
-    },
-    {
-      "check": "Intercept switch selects a different Gram statistic",
-      "passed": true
-    },
-    {
-      "check": "Fee invalidates only downstream stages",
-      "passed": true
-    },
-    {
-      "check": "Cost lab updates",
-      "passed": true
-    },
-    {
-      "check": "Cost direct/factored display agrees",
-      "passed": true,
-      "detail": [
-        "-2.91133%",
-        "-2.91133%",
-        "-0.29193",
-        "4 / 4"
-      ]
-    },
-    {
-      "check": "Strict max threshold proves all off",
-      "passed": true
-    },
-    {
-      "check": "Inclusive max keeps one signal",
-      "passed": true
-    },
-    {
-      "check": "Non-finite vector has scalar fallback",
-      "passed": true
-    },
-    {
-      "check": "Billion-row reference buffer bounded at 8 MiB",
-      "passed": true
-    },
-    {
-      "check": "Lane step advances to second bar",
-      "passed": true
-    },
-    {
-      "check": "Lane animation advances",
-      "passed": true
-    },
-    {
-      "check": "Assembly excerpt registers",
-      "passed": true
-    },
-    {
-      "check": "Assembly excerpt predicate",
-      "passed": true
-    },
-    {
-      "check": "Assembly excerpt masks",
-      "passed": true
-    },
-    {
-      "check": "Assembly excerpt accumulate",
-      "passed": true
-    },
-    {
-      "check": "Claim clinic provides feedback",
-      "passed": true
-    },
-    {
-      "check": "Funnel common table renders",
-      "passed": true
-    },
-    {
-      "check": "Funnel large table renders",
-      "passed": true
-    },
-    {
-      "check": "Funnel paired table renders",
-      "passed": true
-    },
-    {
-      "check": "Scaling wall finite plot",
-      "passed": true
-    },
-    {
-      "check": "Scaling gain finite plot",
-      "passed": true
-    },
-    {
-      "check": "Scaling memory finite plot",
-      "passed": true
-    },
-    {
-      "check": "Scaling multiplier finite plot",
-      "passed": true
-    },
-    {
-      "check": "Scaling reference sklearn",
-      "passed": true
-    },
-    {
-      "check": "Scaling reference limen-cli",
-      "passed": true
-    },
-    {
-      "check": "Scaling reference limen-prepared",
-      "passed": true
-    },
-    {
-      "check": "Full CLI mismatch label preserved",
-      "passed": true
-    },
-    {
-      "check": "Billion-row measured elapsed rendered",
-      "passed": true
-    },
-    {
-      "check": "Projection multiplier rendered",
-      "passed": true
-    },
-    {
-      "check": "Series can be hidden independently",
-      "passed": true
-    },
-    {
-      "check": "Amdahl saturation limit",
-      "passed": true
-    },
-    {
-      "check": "Checkpoint feedback shows correct result",
-      "passed": true
-    },
-    {
-      "check": "Chapter progress changes",
-      "passed": true
-    },
-    {
-      "check": "Notes retained while navigating",
-      "passed": true
-    },
-    {
-      "check": "Evidence modal opens",
-      "passed": true
-    },
-    {
-      "check": "Source line highlighting",
-      "passed": true
-    },
-    {
-      "check": "Pinned source uses the public repository",
-      "passed": true
-    },
-    {
-      "check": "Escape closes evidence modal",
-      "passed": true
-    },
-    {
-      "check": "Course search returns lessons",
-      "passed": true
-    },
-    {
-      "check": "Search result navigates and closes dialog",
-      "passed": true
-    },
-    {
-      "check": "Search includes refreshed lesson text",
-      "passed": true
-    },
-    {
-      "check": "Glossary terms populated",
-      "passed": true
-    },
-    {
-      "check": "Capstone checklist checks all five concepts",
-      "passed": true
-    },
-    {
-      "check": "Notes export contains learner text",
-      "passed": true
-    },
-    {
-      "check": "Light theme switches",
-      "passed": true
-    },
-    {
-      "check": "Mobile no page overflow brief",
-      "passed": true,
-      "detail": [
-        390,
-        390
-      ]
-    },
-    {
-      "check": "Mobile no page overflow reference",
-      "passed": true,
-      "detail": [
-        390,
-        390
-      ]
-    },
-    {
-      "check": "Mobile no page overflow model",
-      "passed": true,
-      "detail": [
-        390,
-        390
-      ]
-    },
-    {
-      "check": "Mobile no page overflow sweep",
-      "passed": true,
-      "detail": [
-        390,
-        390
-      ]
-    },
-    {
-      "check": "Mobile no page overflow scorer",
-      "passed": true,
-      "detail": [
-        390,
-        390
-      ]
-    },
-    {
-      "check": "Mobile no page overflow profile",
-      "passed": true,
-      "detail": [
-        390,
-        390
-      ]
-    },
-    {
-      "check": "Mobile no page overflow cache",
-      "passed": true,
-      "detail": [
-        390,
-        390
-      ]
-    },
-    {
-      "check": "Mobile no page overflow simd",
-      "passed": true,
-      "detail": [
-        390,
-        390
-      ]
-    },
-    {
-      "check": "Mobile no page overflow assembly",
-      "passed": true,
-      "detail": [
-        390,
-        390
-      ]
-    },
-    {
-      "check": "Mobile no page overflow evidence",
-      "passed": true,
-      "detail": [
-        390,
-        390
-      ]
-    },
-    {
-      "check": "Mobile no page overflow funnel",
-      "passed": true,
-      "detail": [
-        390,
-        390
-      ]
-    },
-    {
-      "check": "Mobile no page overflow scale",
-      "passed": true,
-      "detail": [
-        390,
-        390
-      ]
-    },
-    {
-      "check": "Mobile no page overflow reproduce",
-      "passed": true,
-      "detail": [
-        390,
-        390
-      ]
-    },
-    {
-      "check": "Mobile chapter drawer opens",
-      "passed": true
-    },
-    {
-      "check": "Mobile navigation dismisses drawer",
-      "passed": true
-    },
-    {
-      "check": "Lab readouts stay on one line and align across cells",
-      "passed": true,
-      "detail": []
-    },
-    {
-      "check": "Ridge axis label clears the tick labels",
-      "passed": true
-    },
-    {
-      "check": "SIMD equity values fit in their own cells",
-      "passed": true
-    },
-    {
-      "check": "Arrow keys scroll the scaling chart without changing chapter",
-      "passed": true
-    },
-    {
-      "check": "Keyboard can select a chart point and retain focus",
-      "passed": true
-    },
-    {
-      "check": "No browser JavaScript errors throughout",
-      "passed": true,
-      "detail": []
-    },
-    {
-      "check": "No external requests while using the application",
-      "passed": true,
-      "detail": []
-    },
-    {
-      "check": "Desktop reading column with JavaScript disabled",
-      "passed": true
-    }
-  ],
-  "passed": 87,
-  "total": 87,
-  "limitations": [
-    "The opaque origin exercises in-session notes and the no-storage fallback. Persistent localStorage across browser restarts is outside this check.",
-    "Browser checks exercise the learning application using retained benchmark evidence."
+    "brief at 320px",
+    "brief readouts fit at 320px",
+    "model at 320px",
+    "model readouts fit at 320px",
+    "sweep at 320px",
+    "sweep readouts fit at 320px",
+    "reference at 320px",
+    "reference readouts fit at 320px",
+    "evidence at 320px",
+    "evidence readouts fit at 320px",
+    "reproduce at 320px",
+    "reproduce readouts fit at 320px",
+    "brief at 390px",
+    "brief readouts fit at 390px",
+    "model at 390px",
+    "model readouts fit at 390px",
+    "sweep at 390px",
+    "sweep readouts fit at 390px",
+    "reference at 390px",
+    "reference readouts fit at 390px",
+    "evidence at 390px",
+    "evidence readouts fit at 390px",
+    "reproduce at 390px",
+    "reproduce readouts fit at 390px",
+    "brief at 768px",
+    "brief readouts fit at 768px",
+    "model at 768px",
+    "model readouts fit at 768px",
+    "sweep at 768px",
+    "sweep readouts fit at 768px",
+    "reference at 768px",
+    "reference readouts fit at 768px",
+    "evidence at 768px",
+    "evidence readouts fit at 768px",
+    "reproduce at 768px",
+    "reproduce readouts fit at 768px",
+    "brief at 1440px",
+    "brief readouts fit at 1440px",
+    "model at 1440px",
+    "model readouts fit at 1440px",
+    "sweep at 1440px",
+    "sweep readouts fit at 1440px",
+    "reference at 1440px",
+    "reference readouts fit at 1440px",
+    "evidence at 1440px",
+    "evidence readouts fit at 1440px",
+    "reproduce at 1440px",
+    "reproduce readouts fit at 1440px",
+    "Ridge reuses the Gram statistic across regularization settings",
+    "The intercept switch uses the raw statistic",
+    "Four settings and 100 entries need four fits",
+    "Distinct entries all need fits",
+    "Evidence opens with current sweep code",
+    "Evidence links to current package source",
+    "Search responds to unmatched queries",
+    "Search opens the chapter",
+    "Reference quiz gives feedback",
+    "Progress counts understood chapters",
+    "Notes survive navigation",
+    "Export contains written notes",
+    "Theme changes",
+    "Mobile drawer closes after navigation",
+    "No browser errors",
+    "Works offline without network requests"
   ]
 }

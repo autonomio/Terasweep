@@ -1,62 +1,73 @@
 #!/usr/bin/env python3
-"""Build the self-contained performance learning page from repository evidence."""
+"""Build the self-contained learning page from the current package sources."""
 from base64 import b64encode
+import hashlib
 from html import escape
 import json
 from pathlib import Path
-S=Path(__file__).resolve().parent
-D=json.loads((S/'course-data.json').read_text(encoding='utf-8'))
-# Keep the archived payload intact. Render the current lesson copy separately.
-data=json.dumps(D,separators=(',',':'),ensure_ascii=False).replace('<','\\u003c').replace('\u2028','\\u2028').replace('\u2029','\\u2029')
-lessons = S / 'lessons'
-lesson_index = json.loads((lessons / 'index.json').read_text(encoding='utf-8'))
-models = json.loads((S / 'matched-sweep-excerpt.json').read_text(encoding='utf-8'))
-cards = {'ridge': 'Ridge', 'dlinear': 'DLinear', 'lightgbm': 'LightGBM', 'tide': 'TiDE'}
-rows = []
-for name, label in cards.items():
-    measured = models[name]
-    rows.append(
-        f'<tr data-model="{name}"><th scope="row"><a href="https://github.com/autonomio/Terasweep/blob/main/docs/models/{name}.md#sweep-scaling">{label}</a></th>'
-        f'<td>{measured["seconds"]:.2f} s</td><td>{measured["unique_training_configs"]:,}</td>'
-        f'<td>{measured["score_cache_entries"]:,}</td><td>{measured["reference_trials"]:,}</td></tr>'
-    )
-load_mark = (S / 'load-terasweep.svg').read_text(encoding='utf-8').strip()
-load_line = f'<p class="course-load"><span class="sr-only">Load Terasweep, 8, 1</span>{load_mark}</p>'
-nav = []
-sections = []
-group = None
-for i, chapter in enumerate(D['chapters']):
-    chapter_id = chapter['id']
-    lesson = lesson_index[chapter_id]
-    title = escape(lesson['title'])
-    lead = escape(lesson['lead'])
-    body = (lessons / f'{chapter_id}.html').read_text(encoding='utf-8')
-    if chapter_id == 'scale':
-        body = body.replace('@@MATCHED_SWEEP_ROWS@@', ''.join(rows))
-    if group != lesson['group']:
-        group = lesson['group']
-        nav.append(f'<div class="nav-group">{escape(group)}</div>')
-    nav.append(
-        f'<a class="nav-item" href="#{chapter_id}" data-go="{chapter_id}">'
-        f'<span>{title}</span><span class="nav-done" aria-hidden="true"></span></a>'
-    )
-    sections.append(
-        f'<section class="lesson {"active" if i == 0 else ""}" id="{chapter_id}" aria-labelledby="{chapter_id}-title">'
-        f'<header class="chapter-header">{load_line if i == 0 else ""}'
-        f'<h1 id="{chapter_id}-title" tabindex="-1">{title}</h1>'
-        f'<p class="lead">{lead}</p></header><div class="lesson-body">{body}</div></section>'
-    )
 
-font = b64encode((S / 'fonts' / 'finlandica-latin-400-normal.woff2').read_bytes()).decode('ascii')
-css = (S / 'theme.css').read_text(encoding='utf-8').replace('@@FONT@@', font)
-replacements = {
-    '@@FONT_LICENSE@@': (S / 'fonts' / 'finlandica-OFL.txt').read_text(encoding='utf-8'),
-    '@@CSS@@': css,
-    '@@DATA@@': data,
-    '@@JS@@': (S / 'app.js').read_text(),
-    '@@NAV@@': ''.join(nav),
-    '@@CHAPTERS@@': ''.join(sections),
+SOURCE = Path(__file__).resolve().parent
+REPO = SOURCE.parents[2]
+GITHUB = "https://github.com/autonomio/Terasweep/blob/main/"
+EVIDENCE = {
+    "ridge": ("Ridge model", "Code", "src/ridge.rs"),
+    "sweep": ("Sweep selection and reuse", "Code", "src/sweep.rs"),
+    "plan": ("Sweep plan format", "Guide", "docs/sweeps.md"),
+    "audit": ("Model reference audit", "Guide", "docs/research/model-reference-parity.md"),
+    "backends": ("Backend setup", "Guide", "docs/backends.md"),
+    "research": ("Research record", "Index", "docs/research/README.md"),
 }
-page=(S/'template.html').read_text()
-for key,val in replacements.items():page=page.replace(key,val)
-out=S.parent/'index.html';out.write_text(page,encoding='utf-8');print(f'Built {out.name}: {out.stat().st_size:,} bytes')
+
+
+def render():
+    lessons = SOURCE / "lessons"
+    index = json.loads((lessons / "index.json").read_text(encoding="utf-8"))
+    sources = {}
+    for key, (title, kind, path) in EVIDENCE.items():
+        content = (REPO / path).read_text(encoding="utf-8")
+        sources[key] = {
+            "title": title, "kind": kind, "path": path, "url": GITHUB + path,
+            "text": content, "sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(),
+        }
+    payload = {"chapters": [{"id": chapter} for chapter in index], "sources": sources}
+    data = json.dumps(payload, separators=(",", ":")).replace("<", "\\u003c")
+
+    mark = (SOURCE / "load-terasweep.svg").read_text(encoding="utf-8").strip()
+    load_line = f'<p class="course-load"><span class="sr-only">Load Terasweep, 8, 1</span>{mark}</p>'
+    nav, sections = [], []
+    group = None
+    for ordinal, (chapter, lesson) in enumerate(index.items()):
+        title, lead = escape(lesson["title"]), escape(lesson["lead"])
+        body = (lessons / f"{chapter}.html").read_text(encoding="utf-8")
+        if group != lesson["group"]:
+            group = lesson["group"]
+            nav.append(f'<div class="nav-group">{escape(group)}</div>')
+        nav.append(
+            f'<a class="nav-item" href="#{chapter}" data-go="{chapter}">'
+            f'<span>{title}</span><span class="nav-done" aria-hidden="true"></span></a>'
+        )
+        sections.append(
+            f'<section class="lesson {"active" if ordinal == 0 else ""}" id="{chapter}" '
+            f'aria-labelledby="{chapter}-title"><header class="chapter-header">'
+            f'{load_line if ordinal == 0 else ""}<h1 id="{chapter}-title" tabindex="-1">{title}</h1>'
+            f'<p class="lead">{lead}</p></header><div class="lesson-body">{body}</div></section>'
+        )
+
+    font = b64encode((SOURCE / "fonts/finlandica-latin-400-normal.woff2").read_bytes()).decode("ascii")
+    page = (SOURCE / "template.html").read_text(encoding="utf-8")
+    replacements = {
+        "@@FONT_LICENSE@@": (SOURCE / "fonts/finlandica-OFL.txt").read_text(encoding="utf-8"),
+        "@@CSS@@": (SOURCE / "theme.css").read_text(encoding="utf-8").replace("@@FONT@@", font),
+        "@@DATA@@": data, "@@JS@@": (SOURCE / "app.js").read_text(encoding="utf-8"),
+        "@@NAV@@": "".join(nav), "@@CHAPTERS@@": "".join(sections),
+        "@@COUNT@@": str(len(index)),
+    }
+    for key, value in replacements.items():
+        page = page.replace(key, value)
+    return page
+
+
+if __name__ == "__main__":
+    output = SOURCE.parent / "index.html"
+    output.write_text(render(), encoding="utf-8")
+    print(f"Built {output.name}: {output.stat().st_size:,} bytes")

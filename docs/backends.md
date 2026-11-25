@@ -1,18 +1,14 @@
 # Backend setup
 
-`cargo build --release --locked` builds the Rust library and executable.
-`make build` also provides the executable path used by the repository's Python
-CLI and MCP adapter. Ridge and DLinear have no external model backend. Use
-Rust and Cargo 1.63 or newer on ARM64 macOS. The x86-64 Linux build requires
-Rust and Cargo 1.89 or newer for its AVX-512 kernels.
+`cargo build --release --locked` builds the Rust library and executable on
+macOS and Linux using Rust and Cargo 1.63 or newer. Ridge and DLinear require
+only Rust. The repository Python fit adapter uses Python 3.10 or newer.
 
 ## LightGBM
 
-On macOS, install the OpenMP runtime with `brew install libomp` if it is not
-already available. The LightGBM wheel loads `libomp.dylib` from the system.
-
-Install LightGBM 4.6.0 in a local Python environment and point the executable at
-its native library. Python is used here to locate the library.
+On macOS, install the OpenMP runtime with `brew install libomp` if it is
+absent. Install LightGBM 4.6.0 and point Terasweep to the official native
+library. Python is used here to locate the library.
 
 ```sh
 python3 -m venv runs/lightgbm-env
@@ -22,7 +18,7 @@ export TERASWEEP_LIGHTGBM_LIB="$(runs/lightgbm-env/bin/python -c 'from lightgbm.
 
 ## TiDE
 
-Use Python 3.12 with the pinned TensorFlow environment and the Google model
+Use Python 3.12 with the pinned TensorFlow environment and Google model
 source. Terasweep checks the source digest before fitting.
 
 ```sh
@@ -35,17 +31,10 @@ export TERASWEEP_TIDE_PYTHON="$PWD/runs/tide-reference/bin/python"
 export TERASWEEP_TIDE_SOURCE="$PWD/runs/tide-reference/models.py"
 ```
 
-## Return inputs
+## Series inputs
 
-DLinear and TiDE take a single observed return column and one next-return
-target per row, both in percentage points. Use the bundled return matrices for
-an example sweep.
-
-```sh
-make run CONFIG=configs/dlinear.json TRAIN=tests/fixtures/returns/train.bin \
-  TEST=tests/fixtures/returns/test.bin PRICE=tests/fixtures/returns/price.bin \
-  RUNS=1000 OUT=runs/dlinear-example
-```
-
-Use `CONFIG=configs/tide.json` with the same matrices after setting up TiDE.
-[Fixture provenance](../tests/fixtures/README.md)
+DLinear and TiDE expect one observation per feature row and one next-value
+target per row. Each split forms causal windows from its own preceding
+observations, padding the start with its first value. See the
+[bike demand fixtures](../tests/fixtures/README.md) for an example and the
+[sweep plan format](sweeps.md#model-plan) for backend settings.

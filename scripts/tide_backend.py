@@ -1,4 +1,4 @@
-"""Fit the pinned Google Research TiDE on one-step return windows."""
+"""Fit the pinned Google Research TiDE on one-step observation windows."""
 
 import hashlib
 import importlib.util
@@ -55,7 +55,7 @@ def main():
     seed, train_rows, test_rows, configs = json.loads(stream.readline())
     data = np.frombuffer(stream.read(), dtype="<f8").astype(np.float32)
     if data.size != train_rows * 2 + test_rows or not np.isfinite(data).all():
-        raise ValueError("Invalid TiDE return series or labels")
+        raise ValueError("Invalid TiDE observations or labels")
     train_x, train_y, test_x = np.split(data, (train_rows, train_rows * 2))
     output = sys.stdout.buffer
     for lookback, width, rate, epochs in configs:

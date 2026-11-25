@@ -5,7 +5,26 @@ use terasweep::{fit_predict, read_matrix, Model};
 
 pub(crate) fn command(args: &[String]) -> Result<(), Box<dyn Error>> {
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
-    let model = match args.as_slice() {
+    let model = parse_model(&args)?;
+    let mut bytes = Vec::new();
+    io::stdin().lock().read_to_end(&mut bytes)?;
+    let header = bytes.get(..8).ok_or("Missing fit payload header")?;
+    let train_bytes = usize::try_from(u64::from_le_bytes(header.try_into()?))?;
+    let payload = &bytes[8..];
+    let train = read_matrix(payload.get(..train_bytes).ok_or("Truncated train matrix")?)?;
+    let test = read_matrix(&payload[train_bytes..])?;
+    let fit = fit_predict(&model, &train, &test)?;
+    let mut out = io::BufWriter::new(io::stdout().lock());
+    out.write_all(&fit.fit_predict_seconds.to_le_bytes())?;
+    for prediction in fit.predictions {
+        out.write_all(&prediction.to_le_bytes())?;
+    }
+    out.flush()?;
+    Ok(())
+}
+
+pub(crate) fn parse_model(args: &[&str]) -> Result<Model, Box<dyn Error>> {
+    Ok(match args {
         ["ridge", alpha, intercept, eps] => Model::Ridge {
             alpha: alpha.parse()?,
             fit_intercept: intercept.parse()?,
@@ -33,21 +52,6 @@ pub(crate) fn command(args: &[String]) -> Result<(), Box<dyn Error>> {
             epochs: epochs.parse()?,
             seed: seed.parse()?,
         },
-        _ => return Err("Invalid single-model fit arguments".into()),
-    };
-    let mut bytes = Vec::new();
-    io::stdin().lock().read_to_end(&mut bytes)?;
-    let header = bytes.get(..8).ok_or("Missing fit payload header")?;
-    let train_bytes = usize::try_from(u64::from_le_bytes(header.try_into()?))?;
-    let payload = &bytes[8..];
-    let train = read_matrix(payload.get(..train_bytes).ok_or("Truncated train matrix")?)?;
-    let test = read_matrix(&payload[train_bytes..])?;
-    let fit = fit_predict(&model, &train, &test)?;
-    let mut out = io::BufWriter::new(io::stdout().lock());
-    out.write_all(&fit.fit_predict_seconds.to_le_bytes())?;
-    for prediction in fit.predictions {
-        out.write_all(&prediction.to_le_bytes())?;
-    }
-    out.flush()?;
-    Ok(())
+        _ => return Err("Invalid model settings".into()),
+    })
 }

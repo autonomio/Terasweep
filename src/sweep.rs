@@ -1,90 +1,139 @@
-use std::io::{self, Write};
+use std::collections::{hash_map::Entry, BTreeMap, HashMap, HashSet};
+use std::error::Error;
 use std::time::Instant;
 
-use crate::results::{self, RunOutput};
-use crate::{dlinear, lightgbm, ridge, tide, Matrix, Prices, SweepSummary};
+use crate::model::{check_matrices, check_predictions, Training};
+use crate::{dlinear, lightgbm, ridge, tide, Matrix, Model};
 
-/// The winning trials, cache counts, and timing of a completed sweep.
+/// The lowest validation MAE from a completed sweep.
+#[derive(Debug)]
+pub struct SweepWinner {
+    /// Zero-based position in the supplied plan.
+    pub trial: usize,
+    pub model: Model,
+    pub mae: f64,
+    /// Predictions in validation row order.
+    pub predictions: Vec<f64>,
+}
+
+#[derive(Debug)]
 pub struct SweepResult {
-    output: RunOutput,
-    hot_seconds: f64,
+    pub trials: usize,
+    pub unique_fits: usize,
+    pub elapsed_seconds: f64,
+    pub best: SweepWinner,
 }
 
-impl SweepResult {
-    /// Trial counts and per-metric winners.
-    pub fn summary(&self) -> &SweepSummary {
-        &self.output.summary
-    }
-
-    /// Number of distinct fitted configurations in the configured pool.
-    pub fn training_configurations(&self) -> usize {
-        self.output.unique_train_configs
-    }
-
-    /// Number of fits in the configured pool that failed.
-    pub fn failed_training_configurations(&self) -> usize {
-        self.output.failed_train_configs
-    }
-
-    /// Number of distinct training-key, threshold, and rule combinations cached.
-    pub fn score_cache_entries(&self) -> usize {
-        self.output.score_cache_entries
-    }
-
-    /// Seconds spent fitting and running the sweep, including winner diagnostics.
-    pub fn elapsed_seconds(&self) -> f64 {
-        self.hot_seconds
-    }
-
-    /// Write the same JSON receipt as the command-line runner.
-    pub fn write_json(&self, output: impl Write) -> io::Result<()> {
-        results::write_summary_json(output, &self.output, self.hot_seconds)
-    }
-}
-
-/// Run the configured sweep on prepared matrices and aligned test prices.
+/// Evaluate an ordered model plan by mean absolute error on labeled validation data.
 ///
-/// The JSON fields and process environment use the command-line runner's
-/// configuration, including `TERASWEEP_LEVEL` and backend paths.
+/// Identical training configurations share one fit and score. Ridge shares
+/// training statistics across settings, DLinear shares designs per window
+/// shape, and LightGBM and TiDE reuse backend setup. Ties choose the first
+/// supplied trial. Invalid models, fit errors and nonfinite scores return errors.
 pub fn sweep(
-    config_json: &str,
+    models: &[Model],
     train: &Matrix,
-    test: &Matrix,
-    prices: &Prices,
-    runs: usize,
-) -> Result<SweepResult, Box<dyn std::error::Error>> {
-    if !train.has_shape() || !test.has_shape() {
-        return Err("Sweep matrices must have valid nonempty shapes".into());
+    validation: &Matrix,
+) -> Result<SweepResult, Box<dyn Error>> {
+    if models.is_empty() {
+        return Err("Sweep requires at least one model".into());
     }
-    if test.cols != train.cols {
-        return Err(format!("test cols {} != train cols {}", test.cols, train.cols).into());
+    check_matrices(train, validation)?;
+    let start = Instant::now();
+    let mut seen = HashSet::new();
+    let mut unique = Vec::new();
+    for (trial, model) in models.iter().enumerate() {
+        let training = model
+            .training(train.cols)
+            .map_err(|error| format!("Trial {trial}: {error}"))?;
+        if seen.insert(training.key()) {
+            unique.push((trial, training));
+        }
     }
-    if prices.open.len() != test.rows || prices.close.len() != test.rows {
-        return Err(format!(
-            "price rows ({} open, {} close) != test rows {}",
-            prices.open.len(),
-            prices.close.len(),
-            test.rows,
-        )
-        .into());
-    }
+    let unique_fits = unique.len();
 
-    let price_stats = results::precompute_price_stats(prices);
-    let hot_start = Instant::now();
-    let run = match results::model_name(config_json)?
-        .to_ascii_lowercase()
-        .as_str()
-    {
-        "ridge" => ridge::run(config_json, train, test, &price_stats, runs)?,
-        "dlinear" => dlinear::run(config_json, train, test, &price_stats, runs)?,
-        "lightgbm" => lightgbm::run(config_json, train, test, &price_stats, runs)?,
-        "tide" => tide::run(config_json, train, test, &price_stats, runs)?,
-        other => return Err(format!("bad model value: {other}").into()),
-    };
-    let hot_seconds = hot_start.elapsed().as_secs_f64();
+    let mut ridge_stats = None;
+    let mut designs = HashMap::new();
+    let mut lightgbm_backend = None;
+    let mut tide_groups = BTreeMap::new();
+    let mut best = None;
+
+    for (trial, training) in unique {
+        let predictions = match training {
+            Training::Ridge(config) => {
+                let stats = ridge_stats.get_or_insert_with(|| ridge::precompute_stats(train));
+                ridge::fit_predict(stats, validation, config)?
+            }
+            Training::DLinear(config) => {
+                let design = match designs.entry((config.lookback, config.kernel)) {
+                    Entry::Occupied(entry) => entry.into_mut(),
+                    Entry::Vacant(entry) => entry.insert(dlinear::DesignCache::new(
+                        train,
+                        validation,
+                        config.lookback,
+                        config.kernel,
+                    )?),
+                };
+                design.fit_predict(config)?
+            }
+            Training::LightGbm(config, seed) => {
+                let backend = match &lightgbm_backend {
+                    Some(backend) => backend,
+                    None => lightgbm_backend.insert(lightgbm::Backend::new(train)?),
+                };
+                backend.fit_predict(train, validation, config, seed)?
+            }
+            Training::Tide(config, seed) => {
+                let (trials, configs): &mut (Vec<_>, Vec<_>) = tide_groups.entry(seed).or_default();
+                trials.push(trial);
+                configs.push(config);
+                continue;
+            }
+        };
+        consider(&mut best, trial, models[trial], predictions, validation)?;
+    }
+    for (seed, (trials, configs)) in tide_groups {
+        let fits = tide::fit_batch(train, validation, &configs, seed)?;
+        for (trial, fit) in trials.into_iter().zip(fits) {
+            consider(&mut best, trial, models[trial], fit.predictions, validation)?;
+        }
+    }
 
     Ok(SweepResult {
-        output: run,
-        hot_seconds,
+        trials: models.len(),
+        unique_fits,
+        elapsed_seconds: start.elapsed().as_secs_f64(),
+        best: best.ok_or("Sweep returned no predictions")?,
     })
+}
+
+fn consider(
+    best: &mut Option<SweepWinner>,
+    trial: usize,
+    model: Model,
+    predictions: Vec<f64>,
+    validation: &Matrix,
+) -> Result<(), Box<dyn Error>> {
+    check_predictions(&predictions, validation.rows)?;
+    let mae = predictions
+        .iter()
+        .zip(&validation.y)
+        .map(|(prediction, target)| (prediction - target).abs())
+        .sum::<f64>()
+        / validation.rows as f64;
+    if !mae.is_finite() {
+        return Err(format!("Trial {trial} produced nonfinite MAE").into());
+    }
+    if best
+        .as_ref()
+        .map_or(true, |prior| (mae, trial) < (prior.mae, prior.trial))
+    {
+        *best = Some(SweepWinner {
+            trial,
+            model,
+            mae,
+            predictions,
+        });
+    }
+    Ok(())
 }

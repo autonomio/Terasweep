@@ -1,71 +1,33 @@
 #!/usr/bin/env python3
-"""Verify the offline course payload, citations, and recorded scaling data."""
-from __future__ import annotations
+"""Verify that the offline learning page matches its source."""
 import argparse
-import hashlib
 import json
 import re
+import sys
 from pathlib import Path
 
-
-def read_payload(path: Path) -> tuple[str, dict]:
-    text = path.read_text(encoding="utf-8")
-    match = re.search(r'<script type="application/json" id="course-data">(.*?)</script>', text, re.S)
-    if not match:
-        raise ValueError("Missing embedded course data")
-    return text, json.loads(match.group(1))
+ROOT = Path(__file__).resolve().parent
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(ROOT / "source"))
+from build import render
 
 
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("html", nargs="?", type=Path, default=Path(__file__).with_name("index.html"))
-    args = parser.parse_args()
-    text, data = read_payload(args.html)
-    assert len(data["chapters"]) == 13, "Unexpected chapter count"
-    assert len({c["id"] for c in data["chapters"]}) == 13, "Duplicate chapter id"
-    for key, src in data["sources"].items():
-        digest = hashlib.sha256(src["text"].encode("utf-8")).hexdigest()
-        assert digest == src["sha256"], f"Embedded source changed: {key}"
-    for ref in re.findall(r'data-source="([^"]+)"', text.split('<script type="application/json"')[0]):
-        assert ref in data["sources"], f"Unresolved source button: {ref}"
-    course_root = Path(__file__).resolve().parent
-    manifest = json.loads((course_root / "source-manifest.json").read_text())
-    excerpt = manifest["matched_sweep_receipt"]["excerpt"]
-    excerpt_bytes = (course_root / excerpt["path"]).read_bytes()
-    assert hashlib.sha256(excerpt_bytes).hexdigest() == excerpt["sha256"], "Matched receipt excerpt changed"
-    models = json.loads(excerpt_bytes)
-    table = re.search(r'<table id="matched-sweep-table">.*?</table>', text, re.S)
-    assert table, "Missing matched sweep table"
-    scale = table.group()
-    assert set(re.findall(r'<tr data-model="([^"]+)">', scale)) == models.keys()
-    for model, measured in models.items():
-        cells = (
-            f'<td>{measured["seconds"]:.2f} s</td>'
-            f'<td>{measured["unique_training_configs"]:,}</td>'
-            f'<td>{measured["score_cache_entries"]:,}</td>'
-            f'<td>{measured["reference_trials"]:,}</td>'
-        )
-        row = re.search(rf'<tr data-model="{model}">.*?</tr>', scale)
-        assert row and cells in row.group(), f"Wrong matched sweep data: {model}"
-    rows = data["scaling"]["rows"]
-    assert len(rows) == 25
-    assert len({(r["n"], r["level"]) for r in rows}) == 25
-    assert sum(r["n"] for r in rows) == 5_555_500_000
-    for row in rows:
-        assert row["rows"] == row["valid_rows"] + row["failed_rows"] == row["n"]
-        assert row["wall_seconds"] > 0 and row["stable_output_match"]
-        for key, model in data["scaling"]["native_models"].items():
-            estimate = model["startup_seconds"] + model["seconds_per_row"] * row["n"]
-            assert abs(estimate-row["native_estimates_seconds"][key]) < max(1,estimate)*1e-10
-            ratio = estimate / row["wall_seconds"]
-            assert abs(ratio-row["multipliers_vs_projected_native"][key]) < max(1,ratio)*1e-10
-    assert not re.search(r'<script[^>]+src=', text), "External JavaScript dependency"
-    assert not re.search(r'<link[^>]+rel=["\']stylesheet', text), "External CSS dependency"
-    assert not re.search(r'\bfetch\s*\(', text.split('</script><script>')[-1]), "Unexpected runtime fetch"
-    print(json.dumps({"status":"PASS", "chapters":13,"embedded_sources":len(data["sources"]),
-                      "matched_model_sweeps":len(models),
-                      "recorded_scaling_rows":25,"recorded_sample_evaluations":5_555_500_000,
-                      "new_benchmarks_run":False,"html_sha256":hashlib.sha256(args.html.read_bytes()).hexdigest()},indent=2))
+    parser.add_argument("html", nargs="?", type=Path, default=ROOT / "index.html")
+    page = parser.parse_args().html.read_text(encoding="utf-8")
+    if page != render():
+        raise SystemExit("Learning page differs from its source. Rebuild with source/build.py.")
+    markup, payload = page.split('<script type="application/json" id="course-data">')
+    data = json.loads(payload.split("</script>", 1)[0])
+    chapters = {chapter["id"] for chapter in data["chapters"]}
+    for attribute, valid in (("data-go", chapters), ("data-source", data["sources"])):
+        missing = set(re.findall(rf'{attribute}="([^"]+)"', markup)) - set(valid)
+        if missing:
+            raise SystemExit(f"Unresolved {attribute}: {', '.join(sorted(missing))}")
+    if re.search(r'<script[^>]+src=|<link[^>]+rel=["\']stylesheet', markup):
+        raise SystemExit("Learning page depends on external JavaScript or CSS.")
+    print(f'Learning page verified ({len(chapters)} chapters, {len(data["sources"])} embedded sources)')
 
 
 if __name__ == "__main__":
