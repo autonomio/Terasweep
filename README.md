@@ -75,9 +75,6 @@ and works offline from a checkout. [Open the course](https://terasweep.autonom.i
 The research record indexes reference checks and archived benchmark evidence.
 [Research notes](docs/research/README.md)
 
-The optional Qwen3 LoRA trainer hook has a separate CUDA research record.
-[Pannu0 experiment](docs/models/qwen3-lora-pannu0.md)
-
 ## Support
 
 Include the Git commit, model and backend versions, exact command, input shapes,
