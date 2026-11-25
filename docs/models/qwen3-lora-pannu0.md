@@ -63,6 +63,14 @@ tensor had maximum absolute difference zero, against a declared
 `atol=1e-5` and `rtol=1e-4`. All per-example grades and winner indices
 agreed exactly across arms and repeats.
 
+Two further 100-trial pairs exercised the proposed trainer hook directly.
+The warm pair took 48.468 seconds with the hook and 52.427 seconds with
+upstream checkpoint reuse, a 7.6% reduction with exact parity. In the
+cold pair the checkpoint arm ran first and took 56.839 seconds, compared
+with 48.848 seconds for the hook. At 10 trials the hook's two timing
+differences ranged from 0.012 seconds slower to 0.106 seconds faster.
+The repeatable end-to-end gain was established at the 100-trial size.
+
 ## Optional trainer hook
 
 Use [`FrozenPrefixCache`](../../scripts/qwen3_lora_cache.py) with the
