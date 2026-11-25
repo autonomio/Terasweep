@@ -1,35 +1,14 @@
-<div class="split">
-<div>
-<h2>Native Limen fitting</h2>
-<p>The merged Limen Ridge SFD delegates fitting and prediction to <code>sklearn.linear_model.Ridge</code>. Its training method constructs a fresh estimator and calls <code>fit</code>. The native UEL path repeats both preparation and model execution for each experiment row.</p>
-<p>A row that differs only in its fee consequently invokes another fit in Limen, whereas Terasweep can reuse the fitted predictions.</p><button class="ref" data-lines="" data-source="handoff" type="button">Pinned reference and source identity<span aria-hidden="true"> ↗</span></button><button class="ref" data-lines="59-74" data-source="funnel" type="button">Native execution contract<span aria-hidden="true"> ↗</span></button></div>
-<div class="code-card">
-<div class="code-title">LIMEN · PINNED REFERENCE BEHAVIOR</div><pre><code>self.model = _ridge(params)
-self.model.fit(data['x_train'], data['y_train'])
+<h2>Match the inputs before comparing outputs</h2>
+<p>Freeze the training and validation matrices. Use the same model settings, causal windows for series models, and backend versions. Then check every prediction, the validation score, and the winning trial.</p>
+<p>The live audit compares Ridge and DLinear numerically with Limen and checks LightGBM and TiDE bit for bit with their upstream models on the tested environment. All four cases also check the ten-decimal formatted predictions.</p>
 
-# _ridge constructs sklearn.linear_model.Ridge.
-# No cross-trial fit or prediction cache.</code></pre><p class="fine">The wrapper was merged in Limen commit <code>44eff3b2</code> (PR #826). Preparation, metrics, Trainer and Sensor remain part of Limen’s native path.</p></div></div>
-<div class="stat-strip">
-<div><strong>1,014</strong><span>native fit calls in the matched grid</span></div>
-<div><strong>6</strong><span>unique model configurations</span></div>
-<div><strong>169</strong><span>fee × slippage combinations per model</span></div></div>
-<h2>Input, timing and output boundaries</h2>
-<div class="flow-contract">
-<div><b>Native CLI / UEL</b><span>raw input → prepare → fresh sklearn fit → predict → native metrics → full round artifacts</span></div>
-<div><b>Terasweep</b><span>prepared matrices → shared statistics → cached fits → cached/factored scores → winner summary</span></div></div>
-<p>The native CLI and Rust runner perform different preparation and produce different outputs, so a whole-process ratio compares the applications under those respective contracts. The original Rust internal timer includes statistics, fit and prediction precomputation, the sampled loop and winner details, and excludes input loading and price-statistics preparation.</p><button class="ref" data-lines="" data-source="initial" type="button">The first comparison and timing boundary<span aria-hidden="true"> ↗</span></button><button class="ref" data-lines="" data-source="original-sweep" type="button">Read the actual timer<span aria-hidden="true"> ↗</span></button>
-<div class="callout warning"><strong>Return-accounting difference</strong>
-<p>Terasweep uses entry-bar open-to-close returns and multiplicative cost factors. Current native Limen uses a different entry convention and charges fees on notional. Rounded MAE and aggregate signal rates can therefore agree while returns differ. The Rust comparison retains the original scoring contract.</p><button class="ref" data-lines="" data-source="initial" type="button">The observed return mismatch<span aria-hidden="true"> ↗</span></button><button class="ref" data-lines="173-200" data-source="funnel" type="button">Prediction and backtest comparison<span aria-hidden="true"> ↗</span></button></div>
-<h2>Matched references for the four-model runner</h2>
-<p>The four-model audit compares model predictions with Limen Ridge, Limen DLinear, official LightGBM and Google Research TiDE. Its matched sweep refits the reference on every trial and applies the same Terasweep scalar scorer on both paths, so the timing comparison holds the scoring contract fixed. <a href="https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/docs/research/model-reference-parity.md">Model reference audit</a> · <a href="https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/README.md">Matched sweep method</a></p>
-<h2>Three workloads in the original Ridge investigation</h2>
-<div class="lab" id="workload-lab">
-<div class="lab-heading"><span class="eyebrow">Recorded workloads</span><span class="badge measured">Inputs</span></div>
-<div class="segmented" id="workload-tabs"><button class="selected" data-workload="six">Initial six cases</button><button data-workload="grid">Native matched grid</button><button data-workload="original">Original scaling sweep</button></div>
-<div class="workload-detail" id="workload-content"></div></div>
-<p>The early runs used an M1 Max, the first AVX-512 prototype used an AMD EPYC guest, the handwritten-kernel experiment used an Intel 8573C guest, and the integrated and scaling runs used Intel 8370C and AMD EPYC 9V74 guests respectively. Optimization ratios are calculated within the individual experiments.</p><button class="ref" data-lines="" data-source="kernel" type="button">Prototype scope<span aria-hidden="true"> ↗</span></button><button class="ref" data-lines="63-75" data-source="assembly-report" type="button">Standalone hardware record<span aria-hidden="true"> ↗</span></button><button class="ref" data-lines="223-237" data-source="funnel" type="button">Integrated hardware record<span aria-hidden="true"> ↗</span></button><button class="ref" data-lines="1-17" data-source="scaling" type="button">Scaling controls<span aria-hidden="true"> ↗</span></button>
 <div class="checkpoint" data-correct="1">
-<div class="eyebrow">CHECK YOUR MODEL</div>
-<h3>How many fits does native Limen perform in the 1,014-row grid with six distinct model configurations?</h3>
-<div class="quiz-options"><button data-choice="0" type="button">It performs only six fits.</button><button data-choice="1" type="button">1,014 fits of six repeatedly requested configurations.</button><button data-choice="2" type="button">It caches the six models automatically.</button></div>
-<p class="quiz-feedback" hidden="" role="status">The uncached native loop fits every row. Terasweep can fit each distinct training key once.</p></div>
+  <h3>Check your understanding</h3>
+  <p>Which comparison can establish that the sweep preserved the model calculation?</p>
+  <div class="quiz-options">
+    <button type="button" data-choice="0">The two implementations have similar average errors on separate test sets.</button>
+    <button type="button" data-choice="1">Both implementations predict the same prepared rows with the same settings and the observed errors meet the stated tolerance.</button>
+  </div>
+  <p class="quiz-feedback" hidden>Pair up corresponding predictions and compare them on matched inputs. Also check the ranking when the claim concerns sweep results.</p>
+</div>
+<button class="ref" data-source="audit">Open the reference audit ↗</button>

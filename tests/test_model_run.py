@@ -9,7 +9,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOL = ROOT / "scripts/model_run.py"
-BINARY = os.environ.get("TERASWEEP_TEST_BINARY", str(ROOT / "target/terasweep-funnel"))
+BINARY = os.environ.get("TERASWEEP_TEST_BINARY", str(ROOT / "target/release/terasweep"))
 
 
 def invoke(*args, input=None):
@@ -105,73 +105,26 @@ class ModelRunTest(unittest.TestCase):
             self.assertFalse(result.stdout)
             self.assertIsInstance(json.loads(result.stderr)["error"], str)
 
-    def test_seeded_ridge_sweep_matches_all_scalar_levels(self):
+
+    def test_sweep_cli_reports_exact_winner_and_reuses_duplicate_model(self):
         root = Path(self.packet["train"]).parent
-        config = root / "sweep.json"
-        config.write_text(
-            json.dumps(
-                {
-                    "seed": 20260514,
-                    "alphas": {"log_min": 0, "log_max": 1, "count": 2},
-                    "fit_intercept": [True, False],
-                    "solver_eps": [1e-12],
-                    "signal_rule": ["gt", "gte", "lt", "lte", "abs_gt", "abs_gte"],
-                    "threshold_signed": {"min": 5, "max": 9, "step": 1},
-                    "threshold_abs": {"min": 5, "max": 9, "step": 1},
-                    "fee_bps": [0, 17],
-                    "slippage_bps": [0, 9],
-                }
-            )
-        )
-        price = root / "price.bin"
-        price.write_bytes(struct.pack("<8sQ4d", b"PRICE001", 2, 100, 100, 110, 103))
-        out = root / "summary.json"
-        env = dict(os.environ, TERASWEEP_CHECK_BASE="1")
-        env.pop("TERASWEEP_PLAN", None)
-        env.pop("TERASWEEP_EXPORT_PREDICTIONS", None)
-        receipts = {}
-        for level in ("naive", "stats", "train", "score", "bounds", "compact"):
-            result = subprocess.run(
-                [
-                    BINARY,
-                    self.packet["train"],
-                    self.packet["test"],
-                    price,
-                    config,
-                    "64",
-                    out,
-                ],
-                env=dict(env, TERASWEEP_LEVEL=level),
-                capture_output=True,
-                text=True,
-            )
-            self.assertEqual(result.returncode, 0, result.stderr)
-            receipt = json.loads(out.read_text())
-            receipt.pop("hot_loop_seconds")
-            receipt.pop("hot_loop_iterations_per_second")
-            keys = receipt.pop("score_cache_entries")
-            receipts[level] = (receipt, keys)
-        scalar, _ = receipts["naive"]
-        self.assertEqual(scalar["rows"], 64)
-        self.assertEqual(scalar["failed_rows"], 0)
-        # Recorded from an independent SplitMix64 draw of the 64-trial prefix.
-        self.assertEqual(
-            scalar["signal_rule_counts"],
-            {
-                "gt": 8,
-                "gte": 9,
-                "lt": 14,
-                "lte": 6,
-                "abs_gt": 14,
-                "abs_gte": 13,
-            },
-        )
-        for level, (receipt, keys) in receipts.items():
-            with self.subTest(level=level):
-                self.assertEqual(receipt, scalar)
-                self.assertEqual(
-                    keys, 47 if level in ("score", "bounds", "compact") else 0
-                )
+        plan = root / "models.txt"
+        plan.write_text("# Ordered models\n\nridge 1 true 1e-12\nridge 10 true 1e-12\nridge 1 true 1e-12\n")
+        args = [BINARY, "sweep", self.packet["train"], self.packet["test"], plan]
+        result = subprocess.run(args, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        receipt = json.loads(result.stdout)
+        self.assertEqual(receipt["trials"], 3)
+        self.assertEqual(receipt["unique_fits"], 2)
+        self.assertEqual(receipt["best"]["trial"], 0)
+        self.assertEqual(receipt["best"]["predictions"], [20 / 3, 8.0])
+        self.assertAlmostEqual(receipt["best"]["mae"], (20 / 3 + 999 + 999 - 8) / 2)
+
+        plan.write_text("ridge 1 true 1e-12\n# comment\nridge wrong true 1e-12\n")
+        invalid = subprocess.run(args, capture_output=True, text=True)
+        self.assertNotEqual(invalid.returncode, 0)
+        self.assertIn("models.txt:3:", invalid.stderr)
+        self.assertEqual(invalid.stdout, "")
 
 
 if __name__ == "__main__":

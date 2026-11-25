@@ -8,8 +8,8 @@ authors:
   - family-names: Kotila
     given-names: Mikko
 abstract: >-
-  Factorized parameter sweeps with reusable model fits and base scores,
-  reference-checked model predictions, and reproducible performance experiments.
+  Factorized parameter sweeps for regression and one-step forecasting,
+  with reusable model fits and reference-checked predictions.
 keywords:
   - parameter sweeps
   - reproducible benchmarks

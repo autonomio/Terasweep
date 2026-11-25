@@ -2,34 +2,27 @@
 
 ## Input
 
-A single observed return channel and next-return target in percentage points. Uses the pinned Google Research model for one-step forecasting with no covariates. The recorded train and test matrices were **1,992 × 1** and **1,839 × 1**. Settings were `lookback=6`, `hidden_width=8`, `learning_rate=0.001`, `epochs=2`, `seed=20260514`.
+One observed series and a next-value target per row. This is the pinned Google Research TiDE in a one-step, single-series configuration. It uses a constant placeholder feature and has no external covariates.
 
 ## Output
 
-The fit returned 1,839 continuous predictions in test-row order. The first three were `0.096030846`, `0.13600877`, `-0.032604571`.
+One continuous prediction per validation or test row, in input order. The
+reference case uses bike demand with 192 training rows and 64 validation rows,
+each with 1 feature column.
+[Fixture provenance](../../tests/fixtures/README.md)
 
 ## Reference and equivalence
 
-The pinned Google Research TiDE in TensorFlow eager mode with independent window preparation. Bit-identical predictions, with zero differences in the `prediction > 0` signal vector.
+Pinned Google Research TiDE on independently prepared windows. The audit checks eight separately fitted
+configurations and all 512 predictions to ten decimal places. Predictions were bit-identical.
+[Reproduce](../research/model-reference-parity.md#live-audit)
 
-## Single run
+## Sweep
 
-On Apple M1 Max, Terasweep took **274.393 ms** and the reference took **340.700 ms**, a **1.24×** speed ratio for one fit and predict call. Both runs used the same TensorFlow backend. [Comparison and reproduction](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/single-model/README.md) · [Recorded inputs and results](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/single-model/results-m1-max.json)
+Runs one TensorFlow worker per effective seed. Each distinct configuration starts with deterministically initialized weights.
 
-## Sweep scaling
-
-On M1 Max, the sweep used **256 × 1** training and **128 × 1** test matrices and 4 distinct fit settings. The uncached Google Research TiDE reference refit each trial and used the same scalar scorer on the same trial order.
-
-| Sampled trials | Terasweep measured | Reference time | Reference basis | Ratio |
-| ---: | ---: | ---: | --- | ---: |
-| 10 | 6.064 s | 4.472 s | Measured | 0.74× |
-| 100 | 3.650 s | 33.229 s | Measured | 9.10× |
-| 1,000 | 3.413 s | 5.83 min | Measured | 103× |
-| 10,000 | 3.395 s | 57.92 min | Projected | 1,024× |
-| 100,000 | 3.449 s | 9.65 h | Projected | 10,068× |
-| 1,000,000 | 3.508 s | 4.02 days | Projected | 98,983× |
-| 10,000,000 | 4.038 s | 40.19 days | Projected | 859,835× |
-| 100,000,000 | 11.056 s | 401.88 days | Projected | 3,140,695× |
-| 1,000,000,000 | 75.606 s | 4,018.83 days | Projected | 4,592,608× |
-
-Reference measurements through 1,000 trials passed prediction, signal, and winner parity checks. Larger reference entries extend that calibration linearly. Terasweep completed each listed size. [Method and reproduction](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/README.md) · [Measurement receipt](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/results-m1-max.json)
+The audit's nine-entry ordered plan completes eight distinct fits. Its
+winner and validation MAE agree with the reference. The recorded winner's
+MAE is 1.8462 thousand rentals. Use a separate holdout for model
+quality estimates. [Plan format](../sweeps.md#model-plan) ·
+[Historical measurements](../research/README.md)

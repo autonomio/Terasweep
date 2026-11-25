@@ -1,30 +1,15 @@
-<div class="lab" id="dependency-lab">
-<div class="lab-heading"><span class="eyebrow">Parameters and affected stages</span><span class="badge teaching">DEPENDENCY MODEL</span></div>
-<p>Select a parameter change to identify the stages that must be recomputed.</p>
-<div class="segmented" id="dep-controls"><button class="selected" data-dep="alpha">α / intercept / pivot</button><button data-dep="threshold">Rule / threshold</button><button data-dep="cost">Fee / slippage</button><button data-dep="data">Features / target / split</button></div>
-<div class="dep-flow" id="dep-flow"></div>
-<p class="lab-answer" id="dep-explain"></p></div>
-<h2>Training and scoring keys</h2>
-<div class="table-wrap">
-<table><thead>
-<tr><th>Intermediate</th><th>Identity, with data fixed</th><th>Reused across</th></tr></thead><tbody>
-<tr><td>Training statistics</td><td>Prepared X and y</td><td>All model and score settings</td></tr>
-<tr><td>Fit, predictions, MAE</td><td>α, intercept, pivot cutoff</td><td>Rules, thresholds, fees, slippage</td></tr>
-<tr><td>Base score</td><td>Training key, rule, threshold</td><td>Fees and slippage</td></tr>
-<tr><td>Cost-adjusted row</td><td>Base score plus fee and slippage</td><td>Not globally memoized by the original runner</td></tr></tbody></table></div>
-<p>The inherited scoring key excludes costs because the base-score statistics retain the quantities needed to apply costs afterward. Trials with different fees can consequently reuse the base score.</p><button class="ref" data-lines="49-78" data-source="original-ridge" type="button">Training cache construction<span aria-hidden="true"> ↗</span></button><button class="ref" data-lines="49-73" data-source="original-results" type="button">ScoreKey and score_cached<span aria-hidden="true"> ↗</span></button>
-<div class="stat-strip">
-<div><strong>384 × 2 × 3</strong><span>2,304 configured training keys</span></div>
-<div><strong>627</strong><span>failed under the original pivot contract</span></div>
-<div><strong>1,677</strong><span>successful configured training keys</span></div></div>
-<h2>Reuse in one million sampled rows</h2>
-<p>The canonical million-row sample contained 728,102 valid rows and 271,898 failed-fit rows. Its 648,130 distinct valid base-score keys required an initial computation each, so 79,972 valid rows, or about 11% of the valid sample, reused a base score.</p><button class="ref" data-lines="95-115" data-source="scaling" type="button">Key coverage and failed-row accounting<span aria-hidden="true"> ↗</span></button>
-<div class="callout"><strong>Sampling with replacement</strong>
-<p>SplitMix64 derives the trial parameters from the configured seed and a mixed row ID, allowing a winning trial to be reconstructed from its ID. The configured Cartesian space has 781,088,256 logical combinations, including failures. A billion sampled rows contain repeated draws.</p><button class="ref" data-lines="149-178" data-source="original-ridge" type="button">Parameter sampling<span aria-hidden="true"> ↗</span></button><button class="ref" data-lines="103-115" data-source="scaling" type="button">The configured-space ceiling<span aria-hidden="true"> ↗</span></button></div>
-<h2>Failed-fit accounting</h2>
-<p>After a training key fails, downstream requests reuse that failure. These requests remain in the failed and total row counts, so sampled-row throughput includes trials that did not produce fitted models.</p>
-<div class="checkpoint" data-correct="0">
-<div class="eyebrow">CHECK YOUR MODEL</div>
-<h3>Which inputs identify a reusable base score under the original scoring contract?</h3>
-<div class="quiz-options"><button data-choice="0" type="button">Model + threshold + rule, with prices fixed.</button><button data-choice="1" type="button">Model + fee only.</button><button data-choice="2" type="button">The full experiment ID; nothing can be shared.</button></div>
-<p class="quiz-feedback" hidden="" role="status">With prices fixed, predictions, the signal rule and the threshold determine the path. Costs are applied to its retained statistics.</p></div>
+<h2>Count the distinct fits</h2>
+<p>An ordered plan can repeat settings. The sweep identifies equivalent training configurations, fits and scores the first occurrence, and gives exact score ties to the earliest entry. Its output records both the number of plan entries and the number of fits.</p>
+
+<div class="lab" id="reuse-lab">
+  <h2>Repeat a model plan</h2>
+  <p>Each distinct setting appears the same number of times in this example.</p>
+  <label for="fit-settings">Distinct model settings <output id="fit-settings-value" for="fit-settings"></output></label>
+  <input id="fit-settings" type="range" min="1" max="40" value="4">
+  <label for="fit-repeats">Entries per setting <output id="fit-repeats-value" for="fit-repeats"></output></label>
+  <input id="fit-repeats" type="range" min="1" max="250" value="25">
+  <div id="reuse-metrics" class="metric-grid" aria-live="polite"></div>
+</div>
+
+<p>With 100 distinct settings, the sweep needs 100 fits. Ridge still shares input statistics and DLinear shares designs at the same lookback and kernel. LightGBM and TiDE reuse backend setup.</p>
+<button class="ref" data-source="sweep">Open the sweep implementation ↗</button>

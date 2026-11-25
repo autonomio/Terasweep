@@ -1,15 +1,8 @@
-use std::collections::{HashMap, HashSet};
-
-use crate::optimized::{self, CachedFit, CachedTrial, Level};
-use crate::results::{
-    self, CommonSpace, PriceStats, RunOutput, ScoreConfig, ScoredRow, SplitMix64, SweepSummary,
-};
 use crate::Matrix;
 
 #[derive(Clone, Copy)]
 pub struct TrainConfig {
     pub alpha: f64,
-    pub fit_intercept: bool,
     pub solver_eps: f64,
     pub lookback: usize,
     pub kernel: usize,
@@ -21,8 +14,6 @@ struct DesignStats {
     y_mean: f64,
     centered_gram: Vec<f64>,
     centered_rhs: Vec<f64>,
-    raw_gram: Vec<f64>,
-    raw_rhs: Vec<f64>,
 }
 
 struct FeatureMatrix {
@@ -31,336 +22,47 @@ struct FeatureMatrix {
     x: Vec<f64>,
 }
 
-struct DesignCache {
+pub(crate) struct DesignCache {
     train: DesignStats,
     test: FeatureMatrix,
 }
 
-pub struct DLinearStats<'a> {
-    train: &'a Matrix,
-}
-
-pub struct FitOut {
-    pub config: TrainConfig,
-    pub preds: Vec<f64>,
-    pub mae: f64,
-    pub fit_failed: bool,
-}
-
-pub type TrainKey = (u64, bool, u64, usize, usize);
-
-struct ModelSpace {
-    alphas: Vec<f64>,
-    fit_intercepts: Vec<bool>,
-    solver_eps: Vec<f64>,
-    lookbacks: Vec<usize>,
-    kernels: Vec<usize>,
-}
-
-struct Param {
-    train: TrainConfig,
-    score: ScoreConfig,
-    threshold_ordinal: usize,
-}
-
-pub fn run(
-    config_json: &str,
-    train: &Matrix,
-    test: &Matrix,
-    price_stats: &PriceStats,
-    runs: usize,
-) -> Result<RunOutput, Box<dyn std::error::Error>> {
-    if train.cols != 1 || test.cols != 1 || train.rows == 0 || test.rows == 0 {
-        return Err("DLinear requires one nonempty observed return column in each split".into());
-    }
-    let level = Level::from_env()?;
-    if matches!(level, Level::Naive | Level::Stats) {
-        return Err("naive and stats execution levels currently require Ridge".into());
-    }
-    let common = CommonSpace::from_json(config_json)?;
-    let model = ModelSpace::from_json(config_json)?;
-    if model.fit_intercepts.iter().any(|&fit| !fit) {
-        return Err("Limen DLinear fits an intercept; set fit_intercept to [true]".into());
-    }
-    if model.lookbacks.iter().any(|&size| size == 0)
-        || model.kernels.iter().any(|&size| size == 0 || size % 2 == 0)
-        || model
-            .alphas
-            .iter()
-            .any(|&alpha| alpha <= 0.0 || !alpha.is_finite())
-    {
-        return Err(
-            "DLinear requires positive lookbacks and alphas and positive odd kernels".into(),
-        );
-    }
-    let train_configs = model.train_configs();
-    let stats = precompute_stats(train);
-    let train_cache = precompute_train_cache(&stats, test, &train_configs)?;
-    let train_index: HashMap<TrainKey, usize> = train_cache
-        .iter()
-        .enumerate()
-        .map(|(idx, entry)| (cache_key(entry.config), idx))
-        .collect();
-    let mut summary = SweepSummary::new();
-    let fits: Vec<_> = train_cache
-        .iter()
-        .map(|fit| CachedFit {
-            preds: &fit.preds,
-            mae: fit.mae,
-            fit_failed: fit.fit_failed,
-        })
-        .collect();
-    let score_cache_entries = optimized::sweep_cached(
-        level,
-        runs,
-        |id| {
-            let param = model.sample(&common, id);
-            CachedTrial {
-                train_idx: train_index[&cache_key(param.train)],
-                threshold_ordinal: param.threshold_ordinal,
-                score: param.score,
-            }
-        },
-        &common,
-        &fits,
-        price_stats,
-        &mut summary,
-    )?;
-
-    results::export_predictions(train_cache.iter().map(|fit| {
-        let config = fit.config;
-        (
-            format!(
-                "{{\"alpha\": {}, \"fit_intercept\": {}, \"solver_eps\": {}, \"lookback\": {}, \"kernel\": {}}}",
-                results::json_float(config.alpha),
-                config.fit_intercept,
-                results::json_float(config.solver_eps),
-                config.lookback,
-                config.kernel,
-            ),
-            fit.fit_failed,
-            fit.preds.as_slice(),
-        )
-    }))?;
-
-    let best_return_json = row_json(
-        summary.best_return(),
-        &model,
-        &common,
-        &train_index,
-        &train_cache,
-        price_stats,
-    );
-    let best_sharpe_json = row_json(
-        summary.best_sharpe(),
-        &model,
-        &common,
-        &train_index,
-        &train_cache,
-        price_stats,
-    );
-    let best_mae_json = row_json(
-        summary.best_mae(),
-        &model,
-        &common,
-        &train_index,
-        &train_cache,
-        price_stats,
-    );
-    Ok(RunOutput {
-        unique_alphas: model.alphas.len(),
-        unique_train_configs: train_cache.len(),
-        failed_train_configs: train_cache.iter().filter(|entry| entry.fit_failed).count(),
-        score_cache_entries,
-        best_return_json,
-        best_sharpe_json,
-        best_mae_json,
-        summary,
-    })
-}
-
-impl ModelSpace {
-    fn from_json(src: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let alpha_section = results::json_object(src, "alphas")?;
-        Ok(Self {
-            alphas: results::logspace(
-                results::json_f64(alpha_section, "log_min")?,
-                results::json_f64(alpha_section, "log_max")?,
-                results::json_usize(alpha_section, "count")?,
-            )?,
-            fit_intercepts: results::json_bool_array(src, "fit_intercept")?,
-            solver_eps: results::json_f64_array(src, "solver_eps")?,
-            lookbacks: results::json_usize_array(src, "lookbacks")?,
-            kernels: results::json_usize_array(src, "kernels")?,
-        })
-    }
-
-    fn train_configs(&self) -> Vec<TrainConfig> {
-        let mut configs = Vec::with_capacity(
-            self.alphas.len()
-                * self.fit_intercepts.len()
-                * self.solver_eps.len()
-                * self.lookbacks.len()
-                * self.kernels.len(),
-        );
-        for &alpha in &self.alphas {
-            for &fit_intercept in &self.fit_intercepts {
-                for &solver_eps in &self.solver_eps {
-                    for &lookback in &self.lookbacks {
-                        for &kernel in &self.kernels {
-                            configs.push(TrainConfig {
-                                alpha,
-                                fit_intercept,
-                                solver_eps,
-                                lookback,
-                                kernel,
-                            });
-                        }
-                    }
-                }
-            }
-        }
-        configs
-    }
-
-    fn sample(&self, common: &CommonSpace, id: usize) -> Param {
-        let mut rng = SplitMix64::new(common.seed ^ results::mix_id(id as u64));
-        let signal_rule = common.signal_rules[rng.index(common.signal_rules.len())];
-        let thresholds = if signal_rule.is_abs() {
-            &common.threshold_abs
-        } else {
-            &common.threshold_signed
+impl DesignCache {
+    pub(crate) fn new(
+        train: &Matrix,
+        test: &Matrix,
+        lookback: usize,
+        kernel: usize,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let valid_size = |elements: Option<usize>| {
+            elements.map_or(false, |n| {
+                n <= isize::MAX as usize / std::mem::size_of::<f64>()
+            })
         };
-        let alpha = self.alphas[rng.index(self.alphas.len())];
-        let threshold_ordinal = rng.index(thresholds.len());
-        let threshold = thresholds[threshold_ordinal];
-        let fit_intercept = self.fit_intercepts[rng.index(self.fit_intercepts.len())];
-        let solver_eps = self.solver_eps[rng.index(self.solver_eps.len())];
-        let lookback = self.lookbacks[rng.index(self.lookbacks.len())];
-        let kernel = self.kernels[rng.index(self.kernels.len())];
-        let fee_bps = common.fee_bps[rng.index(common.fee_bps.len())];
-        let slippage_bps = common.slippage_bps[rng.index(common.slippage_bps.len())];
-        Param {
-            threshold_ordinal,
-            train: TrainConfig {
-                alpha,
-                fit_intercept,
-                solver_eps,
-                lookback,
-                kernel,
-            },
-            score: ScoreConfig {
-                threshold,
-                fee_bps,
-                slippage_bps,
-                signal_rule,
-            },
+        let dims = lookback
+            .checked_mul(2)
+            .ok_or("DLinear lookback is too large")?;
+        if !valid_size(dims.checked_mul(dims))
+            || !valid_size(dims.checked_mul(test.rows))
+            || !lookback
+                .checked_add(kernel)
+                .map_or(false, |n| n <= isize::MAX as usize)
+        {
+            return Err("DLinear window dimensions are too large".into());
         }
-    }
-}
-
-fn row_json(
-    row: Option<ScoredRow>,
-    model: &ModelSpace,
-    common: &CommonSpace,
-    train_index: &HashMap<TrainKey, usize>,
-    train_cache: &[FitOut],
-    price_stats: &PriceStats,
-) -> String {
-    match row {
-        Some(row) => {
-            let param = model.sample(common, row.id);
-            let cache_idx = train_index[&cache_key(param.train)];
-            let detail = results::compute_backtest_stats(
-                &train_cache[cache_idx].preds,
-                param.score,
-                price_stats,
-                common,
-            );
-            format!(
-                "{{\"model\": \"dlinear\", \"lookback\": {}, \"kernel\": {}, \"id\": {}, \"alpha\": {}, \"threshold\": {}, \"fit_intercept\": {}, \"solver_eps\": {}, \"fee_bps\": {}, \"slippage_bps\": {}, \"signal_rule\": \"{}\", \"mae\": {}, \"signal_rate_pct\": {}, \"backtest_total_return_net_pct\": {}, \"backtest_sharpe_per_bar\": {}, {}}}",
-                param.train.lookback,
-                param.train.kernel,
-                row.id,
-                results::json_float(param.train.alpha),
-                results::json_float(param.score.threshold),
-                param.train.fit_intercept,
-                results::json_float(param.train.solver_eps),
-                results::json_float(param.score.fee_bps),
-                results::json_float(param.score.slippage_bps),
-                param.score.signal_rule.as_str(),
-                results::json_float(row.mae),
-                results::json_float(row.signal_rate),
-                results::json_float(row.net_return),
-                results::json_float(row.sharpe),
-                results::backtest_stats_json(detail)
-            )
-        }
-        None => "null".to_string(),
-    }
-}
-
-pub fn precompute_stats(train: &Matrix) -> DLinearStats<'_> {
-    DLinearStats { train }
-}
-
-pub fn precompute_train_cache(
-    stats: &DLinearStats<'_>,
-    test: &Matrix,
-    configs: &[TrainConfig],
-) -> Result<Vec<FitOut>, Box<dyn std::error::Error>> {
-    let mut cache: Vec<FitOut> = Vec::new();
-    let mut seen: HashSet<TrainKey> = HashSet::new();
-    let mut designs: HashMap<(usize, usize), DesignCache> = HashMap::new();
-
-    for &config in configs {
-        let key = cache_key(config);
-        if !seen.insert(key) {
-            continue;
-        }
-        let design_key = (config.lookback, config.kernel);
-        if !designs.contains_key(&design_key) {
-            designs.insert(
-                design_key,
-                DesignCache {
-                    train: build_design_stats(stats.train, config.lookback, config.kernel),
-                    test: build_feature_matrix(test, config.lookback, config.kernel),
-                },
-            );
-        }
-        let design = designs.get(&design_key).unwrap();
-        match fit_from_stats(&design.train, config) {
-            Ok(beta) => {
-                let (preds, mae) = predict_and_mae(test, &design.test, &beta);
-                cache.push(FitOut {
-                    config,
-                    preds,
-                    mae,
-                    fit_failed: false,
-                });
-            }
-            Err(_) => {
-                cache.push(FitOut {
-                    config,
-                    preds: Vec::new(),
-                    mae: f64::NAN,
-                    fit_failed: true,
-                });
-            }
-        }
+        Ok(Self {
+            train: build_design_stats(train, lookback, kernel),
+            test: build_feature_matrix(test, lookback, kernel),
+        })
     }
 
-    Ok(cache)
-}
-
-pub fn cache_key(config: TrainConfig) -> TrainKey {
-    (
-        config.alpha.to_bits(),
-        config.fit_intercept,
-        config.solver_eps.to_bits(),
-        config.lookback,
-        config.kernel,
-    )
+    pub(crate) fn fit_predict(
+        &self,
+        config: TrainConfig,
+    ) -> Result<Vec<f64>, Box<dyn std::error::Error>> {
+        let beta = fit_from_stats(&self.train, config)?;
+        Ok(predict(&self.test, &beta))
+    }
 }
 
 fn build_design_stats(data: &Matrix, lookback: usize, kernel: usize) -> DesignStats {
@@ -384,8 +86,6 @@ fn build_design_stats(data: &Matrix, lookback: usize, kernel: usize) -> DesignSt
 
     let mut centered_gram = vec![0.0; dims * dims];
     let mut centered_rhs = vec![0.0; dims];
-    let mut raw_gram = vec![0.0; dims * dims];
-    let mut raw_rhs = vec![0.0; dims];
 
     for row in 0..data.rows {
         fill_features(data, row, lookback, kernel, &mut row_features);
@@ -394,10 +94,8 @@ fn build_design_stats(data: &Matrix, lookback: usize, kernel: usize) -> DesignSt
             let xi_raw = row_features[i];
             let xi = xi_raw - x_mean[i];
             centered_rhs[i] += xi * yc;
-            raw_rhs[i] += xi_raw * data.y[row];
             for j in 0..=i {
                 centered_gram[i * dims + j] += xi * (row_features[j] - x_mean[j]);
-                raw_gram[i * dims + j] += xi_raw * row_features[j];
             }
         }
     }
@@ -408,8 +106,6 @@ fn build_design_stats(data: &Matrix, lookback: usize, kernel: usize) -> DesignSt
         y_mean,
         centered_gram,
         centered_rhs,
-        raw_gram,
-        raw_rhs,
     }
 }
 
@@ -482,16 +178,8 @@ fn fit_from_stats(
     config: TrainConfig,
 ) -> Result<Vec<f64>, Box<dyn std::error::Error>> {
     let dims = stats.dims;
-    let mut gram = if config.fit_intercept {
-        stats.centered_gram.clone()
-    } else {
-        stats.raw_gram.clone()
-    };
-    let mut rhs = if config.fit_intercept {
-        stats.centered_rhs.clone()
-    } else {
-        stats.raw_rhs.clone()
-    };
+    let mut gram = stats.centered_gram.clone();
+    let mut rhs = stats.centered_rhs.clone();
 
     for i in 0..dims {
         gram[i * dims + i] += config.alpha;
@@ -501,32 +189,17 @@ fn fit_from_stats(
     }
 
     solve_spd_in_place(&mut gram, &mut rhs, dims, config.solver_eps)?;
-    let intercept = if config.fit_intercept {
-        stats.y_mean
-            - stats
-                .x_mean
-                .iter()
-                .zip(rhs.iter())
-                .map(|(x, b)| x * b)
-                .sum::<f64>()
-    } else {
-        0.0
-    };
+    let intercept = stats.y_mean
+        - stats
+            .x_mean
+            .iter()
+            .zip(rhs.iter())
+            .map(|(x, b)| x * b)
+            .sum::<f64>();
     let mut beta = Vec::with_capacity(dims + 1);
     beta.push(intercept);
     beta.extend_from_slice(&rhs);
     Ok(beta)
-}
-
-pub(crate) fn fit_one(
-    train: &Matrix,
-    test: &Matrix,
-    config: TrainConfig,
-) -> Result<Vec<f64>, Box<dyn std::error::Error>> {
-    let design = build_design_stats(train, config.lookback, config.kernel);
-    let beta = fit_from_stats(&design, config)?;
-    let features = build_feature_matrix(test, config.lookback, config.kernel);
-    Ok(predict(&features, &beta))
 }
 
 fn predict(features: &FeatureMatrix, beta: &[f64]) -> Vec<f64> {
@@ -539,12 +212,6 @@ fn predict(features: &FeatureMatrix, beta: &[f64]) -> Vec<f64> {
         predictions.push(prediction);
     }
     predictions
-}
-
-fn predict_and_mae(data: &Matrix, features: &FeatureMatrix, beta: &[f64]) -> (Vec<f64>, f64) {
-    let predictions = predict(features, beta);
-    let mae = results::mae(&predictions, &data.y);
-    (predictions, mae)
 }
 
 fn solve_spd_in_place(

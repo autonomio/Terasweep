@@ -1,0 +1,5 @@
+# kind alpha fit_intercept solver_eps
+ridge 1 true 1e-12
+ridge 0.01 true 1e-12
+ridge 10 true 1e-12
+ridge 1 true 1e-12
