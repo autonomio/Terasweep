@@ -30,11 +30,14 @@ resolve from the server's working directory. Use absolute paths when the agent
 runs outside the checkout. LightGBM and TiDE require their local backend
 environment to be present when the server starts. [Backend setup](backends.md)
 
+## Matrix format
+
 Both matrix files begin with `RIDGE001`, then little-endian unsigned 64-bit
 row and column counts, row-major `f64` features, and one `f64` target per row.
 The fit uses training targets and test features. Use finite placeholders in
 the test target slots when only features are available. The receipt identifies the
-actual matrix bytes by hash and lists predictions in test-row order.
+actual matrix bytes by hash and lists predictions in test-row order. Sweeps
+use labeled validation matrices in this same format. [Sweep interface](sweeps.md)
 
 A fit result contains `version`, `model`, train and test fingerprints,
 `predictions`, and `fit_predict_seconds`. CLI errors exit nonzero with a JSON

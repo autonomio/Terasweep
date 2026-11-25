@@ -11,7 +11,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_BINARY = ROOT / "target/terasweep-funnel"
+DEFAULT_BINARY = ROOT / "target/release/terasweep"
 MCP_PROTOCOL = "2025-11-25"
 TOOL = "terasweep_fit"
 

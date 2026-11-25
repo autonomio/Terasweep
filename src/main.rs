@@ -1,27 +1,48 @@
+use std::error::Error;
+use std::io::{self, Write};
 use std::{env, fs};
-use terasweep::{read_matrix, read_prices, sweep};
+
+use terasweep::{read_matrix, sweep};
 
 mod single_fit;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args: Vec<String> = env::args().collect();
-    if args.get(1).map_or(false, |arg| arg == "_fit") {
-        return single_fit::command(&args[2..]);
+fn main() -> Result<(), Box<dyn Error>> {
+    let args: Vec<String> = env::args().skip(1).collect();
+    match args.as_slice() {
+        [command, tail @ ..] if command == "_fit" => single_fit::command(tail),
+        [command, train, validation, plan] if command == "sweep" => {
+            sweep_command(train, validation, plan)
+        }
+        _ => Err("usage: terasweep sweep <train.bin> <validation.bin> <models.txt>".into()),
     }
-    if args.len() != 7 {
-        return Err(
-            "usage: terasweep <train.bin> <test.bin> <price.bin> <config.json> <runs> <out.json>"
-                .into(),
-        );
+}
+
+fn sweep_command(train: &str, validation: &str, plan: &str) -> Result<(), Box<dyn Error>> {
+    let train = read_matrix(&fs::read(train)?)?;
+    let validation = read_matrix(&fs::read(validation)?)?;
+    let mut models = Vec::new();
+    for (line, text) in fs::read_to_string(plan)?.lines().enumerate() {
+        let text = text.trim();
+        if text.is_empty() || text.starts_with('#') {
+            continue;
+        }
+        let settings: Vec<_> = text.split_whitespace().collect();
+        let model = single_fit::parse_model(&settings)
+            .map_err(|error| format!("{plan}:{}: {error}", line + 1))?;
+        models.push(model);
     }
-
-    let train = read_matrix(&fs::read(&args[1])?)?;
-    let test = read_matrix(&fs::read(&args[2])?)?;
-    let prices = read_prices(&fs::read(&args[3])?)?;
-    let config_json = fs::read_to_string(&args[4])?;
-    let runs: usize = args[5].parse()?;
-
-    let result = sweep(&config_json, &train, &test, &prices, runs)?;
-    result.write_json(fs::File::create(&args[6])?)?;
+    let result = sweep(&models, &train, &validation)?;
+    let mut out = io::BufWriter::new(io::stdout().lock());
+    writeln!(
+        out,
+        "{{\"trials\":{},\"unique_fits\":{},\"elapsed_seconds\":{},\"best\":{{\"trial\":{},\"mae\":{},\"predictions\":{:?}}}}}",
+        result.trials,
+        result.unique_fits,
+        result.elapsed_seconds,
+        result.best.trial,
+        result.best.mae,
+        result.best.predictions,
+    )?;
+    out.flush()?;
     Ok(())
 }

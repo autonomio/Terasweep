@@ -140,7 +140,7 @@ impl LightGbm {
         labels: &[f32],
         test: &Matrix,
         config: TrainConfig,
-        seed: u64,
+        seed: u32,
     ) -> Result<Vec<f64>, Box<dyn Error>> {
         if train.cols != test.cols
             || train.rows.checked_mul(train.cols) != Some(train.x.len())
@@ -162,7 +162,7 @@ impl LightGbm {
             config.max_bins,
             config.lambda_l2,
             config.min_data_in_leaf,
-            seed & i32::MAX as u64,
+            seed,
         ))?;
         let mut dataset = ptr::null_mut();
         // Both matrices are contiguous row-major f64, and LightGBM labels are f32.
