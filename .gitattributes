@@ -1,3 +1,5 @@
 # Preserve fixture bytes on every platform.
 tests/fixtures/**/*.bin -text
-docs/masterclass/index.html linguist-generated=true
+# Review the learning page in its source files. CI checks the generated HTML.
+docs/masterclass/index.html linguist-generated=true -diff
+docs/masterclass/source/*-data.json linguist-generated=true -diff
