@@ -1,6 +1,6 @@
 <h2>Match the inputs before comparing outputs</h2>
 <p>Freeze the training and validation matrices. Use the same model settings, causal windows for series models, and backend versions. Then check every prediction, the validation score, and the winning trial.</p>
-<p>The live audit compares Ridge and DLinear numerically with Limen and checks LightGBM and TiDE bit for bit with their upstream models on the tested environment. All four cases also check the ten-decimal formatted predictions.</p>
+<p>The live audit calls scikit-learn Ridge directly, solves DLinear with SciPy and NumPy, and checks LightGBM and TiDE bit for bit with their upstream models on the tested environment. All four cases also check the ten-decimal formatted predictions.</p>
 
 <div class="checkpoint" data-correct="1">
   <h3>Check your understanding</h3>

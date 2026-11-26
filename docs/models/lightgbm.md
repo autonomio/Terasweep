@@ -15,7 +15,7 @@ each with 10 feature columns.
 
 Official Python LightGBM 4.6.0 regression. The audit checks eight separately fitted
 configurations and all 512 predictions to ten decimal places. Predictions were bit-identical.
-[Reproduce](../research/model-reference-parity.md#live-audit)
+[Reproduce](../research/model-reference-parity.md#live-audit) · [Single-fit performance](../research/model-reference-parity.md#single-fit-performance)
 
 ## Sweep
 

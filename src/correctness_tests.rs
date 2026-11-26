@@ -14,7 +14,7 @@ fn native_models_match_reference_at_ten_decimals() {
         x: vec![-0.75, 1.75, -1.25, 0.0],
         y: vec![0.0; 4],
     };
-    // Limen 6.0.1 with scikit-learn 1.7.2 Cholesky and NumPy 2.2.6 SVD.
+    // Direct scikit-learn 1.7.2 Cholesky and NumPy 2.2.6 SVD references.
     let cases = [
         (
             Model::Ridge {

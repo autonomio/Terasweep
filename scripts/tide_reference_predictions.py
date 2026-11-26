@@ -1,9 +1,10 @@
-"""Refit one case with the official TiDE API on pre-windowed arrays."""
+"""Fit and predict with the official TiDE API on one observation series."""
 
 import importlib.util
 import json
 import sys
 from pathlib import Path
+from time import perf_counter
 
 import numpy as np
 import tensorflow as tf
@@ -16,14 +17,16 @@ def main():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     settings = json.loads(settings_json)
-    tf.keras.utils.set_random_seed(settings["seed"])
     tf.config.experimental.enable_op_determinism()
     tf.config.run_functions_eagerly(True)
 
-    data = np.load(inputs_path)
-    lookback = data["train"].shape[1]
+    with np.load(inputs_path) as data:
+        train_x, train_y, test_x = data["train"], data["labels"], data["test"]
+    lookback = settings["lookback"]
 
-    def inputs(windows):
+    def inputs(values):
+        history = np.pad(values, (lookback - 1, 0), mode="edge")
+        windows = np.lib.stride_tricks.sliding_window_view(history, lookback)
         return (
             (
                 tf.convert_to_tensor(windows),
@@ -34,6 +37,8 @@ def main():
             tf.zeros(windows.shape[0], tf.int32),
         )
 
+    started = perf_counter()
+    tf.keras.utils.set_random_seed(settings["seed"])
     width = settings["hidden_width"]
     model = module.TideModel(
         dict(
@@ -46,14 +51,15 @@ def main():
         cat_sizes=[],
         num_ts=1,
     )
-    train, val, ids = inputs(data["train"])
+    train, val, ids = inputs(train_x)
     optimizer = tf.keras.optimizers.Adam(settings["learning_rate"])
-    labels = tf.convert_to_tensor(data["labels"][:, None])
+    labels = tf.convert_to_tensor(train_y[:, None])
     for _ in range(settings["epochs"]):
         model.train_step(train, val, labels, ids, optimizer)
-    test = inputs(data["test"])
-    result = model(test, training=False).numpy()
-    Path(output_path).write_bytes(result.astype("<f8").tobytes())
+    result = model(inputs(test_x), training=False).numpy()
+    elapsed = perf_counter() - started
+    Path(output_path).write_bytes(np.asarray([elapsed], dtype="<f8").tobytes()
+                                  + result.astype("<f8").tobytes())
 
 
 if __name__ == "__main__":
