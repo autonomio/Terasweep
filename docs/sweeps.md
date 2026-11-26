@@ -1,8 +1,8 @@
 # Run a parameter sweep
 
-Terasweep fits each model entry on the training matrix and ranks it by mean
-absolute error (MAE) on the labeled validation matrix. Both matrices use the
-same numeric layout as the fit API and must have the same feature count.
+Terasweep fits each distinct configuration on the training matrix and ranks
+it by mean absolute error (MAE) on the labeled validation matrix. Both matrices
+use the same numeric layout as the fit API and must have the same feature count.
 Reserve a separate holdout to estimate the selected model's predictive quality.
 [Matrix format](agents.md#matrix-format)
 
@@ -47,7 +47,7 @@ the loaded C API and converted labels. TiDE uses one worker per effective
 seed, with fresh weights for each distinct configuration. Both backends use
 the low 31 bits of the supplied seed.
 
-The sweep timer includes planning model keys, fitting, and evaluating MAE.
-It excludes file loading and JSON output. Every distinct configuration still
-requires its own fit. Prediction-only runs can continue to use the single-model
-CLI or `fit_predict`. [Backend setup](backends.md) · [Model cards](../README.md#model-cards)
+The sweep timer starts after the input matrices pass validation. It includes
+model setup, deduplication, fitting, prediction, and MAE scoring. Use the
+single-model CLI or `fit_predict` for one fresh fit and prediction pass without
+sweep scoring. [Backend setup](backends.md) · [Model cards](../README.md#model-cards)

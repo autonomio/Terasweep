@@ -17,7 +17,7 @@
   "reference": {
     "title": "Reference parity",
     "group": "Validation",
-    "lead": "Compare the same prepared inputs and model settings with an independent upstream fit."
+    "lead": "Compare the same prepared inputs and model settings with a direct reference fit."
   },
   "evidence": {
     "title": "Read a measurement",

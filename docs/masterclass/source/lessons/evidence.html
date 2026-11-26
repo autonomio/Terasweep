@@ -1,5 +1,9 @@
 <h2>Separate reuse from training speed</h2>
-<p>A sweep speedup can reflect shared training statistics, fewer fits, or shared backend startup. A single-fit comparison answers a different question. Record which phases each timer includes and keep model settings, evaluation, and requested trials matched.</p>
-<p>When evaluating a runtime claim, check the train and validation shapes, unique fit count, hardware, and backend versions. Time measured at a smaller scale can support a projection, which should be identified separately from measured results.</p>
+<p>Time one fresh fit and prediction pass on the same prepared inputs with Terasweep and the direct reference. Check that the predictions agree. The fit-and-predict time measures both phases together. Read where each timer starts, including how it handles input validation.</p>
+<p>Then time the sweep on a matched model plan and scorer. Repeated settings can share a fit and score. Distinct fits can share training statistics, window designs, or backend setup. Check both trial counts and distinct fit counts when interpreting the time.</p>
+<p>Use the fixture shapes, hardware, and backend versions to interpret recorded times. A projection should state its measured calibration and how it extends that rate.</p>
 <p>The historical benchmark reports are retained in the research record with their original workloads and timing boundaries.</p>
-<button class="ref" data-source="research">Open the research record ↗</button>
+<div class="small-buttons">
+  <button class="ref" data-source="audit">Open the direct comparison ↗</button>
+  <button class="ref" data-source="research">Open the research record ↗</button>
+</div>

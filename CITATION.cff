@@ -8,8 +8,8 @@ authors:
   - family-names: Kotila
     given-names: Mikko
 abstract: >-
-  Factorized parameter sweeps for regression and one-step forecasting,
-  with reusable model fits and reference-checked predictions.
+  Model fitting and reference-checked prediction for regression and one-step
+  forecasting, with parameter sweeps that reuse shared work.
 keywords:
   - parameter sweeps
   - reproducible benchmarks

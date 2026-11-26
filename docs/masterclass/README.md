@@ -1,8 +1,8 @@
 # Terasweep performance learning
 
-The course explores the current package through the concrete strength examples,
-a Ridge regularization lab, and a sweep reuse lab. It covers the validation
-split, reference parity, and how to interpret speedups from shared work.
+The course uses concrete strength examples, a Ridge regularization lab, and
+a sweep reuse lab. It covers direct fit-and-predict comparisons, validation
+sweeps, and how to interpret speedups from shared work.
 [Research record](../research/README.md)
 
 Open [index.html](index.html) from a checkout in a modern browser or use the
