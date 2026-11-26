@@ -2,7 +2,10 @@
 
 ## Input
 
-One observed series and a next-value target per row. This is the pinned Google Research TiDE in a one-step, single-series configuration. It uses a constant placeholder feature and has no external covariates.
+One observed series and a next-value target per row. Terasweep uses Google
+Research's MLP encoder-decoder in a one-step configuration. The observed
+series is the only input variable, with a constant placeholder feature passed
+to the model. [TiDE paper](https://arxiv.org/abs/2304.08424)
 
 ## Output
 

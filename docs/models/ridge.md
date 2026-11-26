@@ -26,3 +26,11 @@ winner and validation MAE agree with the reference. The recorded winner's
 MAE is 8.1439 MPa. Use a separate holdout for model
 quality estimates. [Plan format](../sweeps.md#model-plan) ·
 [Historical measurements](../research/README.md)
+
+## Single-fit performance
+
+On matched inputs in the Apple M1 Max pilot, one fit and predict call took
+**0.223 ms** in Terasweep and **1.987 ms** in the scikit-learn Cholesky
+reference through Limen. The maximum absolute prediction difference was
+`5.77e-15`. This comparison measures fit and prediction from matrices
+already in memory. [Method and receipt](https://github.com/autonomio/Terasweep/tree/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/single-model)

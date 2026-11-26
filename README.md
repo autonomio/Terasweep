@@ -1,11 +1,39 @@
 # Terasweep
 
-Factorized Rust parameter sweeps with reference-checked model predictions.
+Terasweep is a Rust package that tests how far classic precomputation and
+memoization can speed up parameter sweeps while preserving reference-model
+predictions and sweep winners.
 
-[Key features](#key-features) · [Install](#install) · [Examples](#examples) · [Model cards](#model-cards) · [Research and learning](#research-and-learning) · [Support](#support) · [Cite](#citations) · [Download](https://github.com/autonomio/Terasweep/archive/refs/heads/main.zip)
+[Measured performance](#measured-performance) · [Key features](#key-features) · [Install](#install) · [Examples](#examples) · [Model cards](#model-cards) · [Research and learning](#research-and-learning) · [Support](#support) · [Cite](#citations) · [Download](https://github.com/autonomio/Terasweep/archive/refs/heads/main.zip)
 
 Fit Ridge, DLinear, LightGBM regression, or TiDE on prepared numeric matrices.
 Compare model settings on a labeled validation split using mean absolute error.
+
+## Measured performance
+
+The archived Apple M1 Max pilot matched the reference predictions, signals,
+and sweep winners across linear models, boosted trees, and TiDE's MLP
+encoder-decoder. The uncached path used each model's established reference,
+including scikit-learn's Cholesky Ridge through Limen. It refit every trial
+and applied the same scoring rules. The reference times below exclude backend
+setup. [Benchmark method](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/README.md)
+
+| Model | Matched trials | Uncached loop | Terasweep | Measured speedup | Terasweep at 1 billion trials |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Ridge | 10,000 | 2.223 s | 2.524 ms | **881×** | 51.38 s |
+| DLinear | 10,000 | 2.054 s | 1.755 ms | **1,170×** | 72.46 s |
+| LightGBM | 10,000 | 31.547 s | 22.924 ms | **1,376×** | 77.48 s |
+| TiDE | 1,000 | 347.227 s | 3.413 s | **102×** | 75.61 s |
+
+Each billion-trial run reused 4 to 18 distinct fits and cached scoring work
+across sampled trials. TiDE had the largest projected speedup at that scale.
+The uncached estimate extrapolates its measured 1,000-trial loop. The current
+package applies fit and training-statistic reuse to generic validation-MAE
+sweeps. [Measurement receipt and projections](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/results-m1-max.json) · [Current reference audit](docs/research/model-reference-parity.md)
+
+A separate Ridge ablation in the same Rust runner measured a **115×** speedup
+from sharing training statistics, fitted predictions, and scores.
+[Factorization ablation](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/reports/terasweep_reverse_funnel_report.md#outcome)
 
 ## Key features
 
