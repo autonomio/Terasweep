@@ -6,13 +6,16 @@ import struct
 import subprocess
 from itertools import product
 from pathlib import Path
+from statistics import median
 from tempfile import TemporaryDirectory
+from time import perf_counter
 
 import numpy as np
 from lightgbm import LGBMRegressor
 from lightgbm.basic import _LIB
-from limen.sfd.reference_architecture.dlinear_regressor import DLinearRegressor
-from limen.sfd.reference_architecture.ridge_regressor import RidgeRegressor
+from scipy.ndimage import uniform_filter1d
+from sklearn.linear_model import Ridge
+from threadpoolctl import threadpool_limits
 
 from model_run import DEFAULT_BINARY, ROOT, fit, load_matrix, validate_request
 
@@ -50,46 +53,51 @@ def matrix(path):
     return x.reshape(rows, columns), y
 
 
-def windows(x, lookback):
+def dlinear_design(x, lookback, kernel):
     history = np.pad(x[:, 0], (lookback - 1, 0), mode="edge")
-    return np.lib.stride_tricks.sliding_window_view(history, lookback)
+    windows = np.lib.stride_tricks.sliding_window_view(history, lookback)
+    trend = uniform_filter1d(windows, size=kernel, axis=1, mode="nearest")
+    return np.hstack((windows - trend, trend))
+
+
+def predict(kind, params, train, validation):
+    x, y = train
+    xt, _ = validation
+    if kind == "ridge":
+        model = Ridge(alpha=params["alpha"], fit_intercept=params["fit_intercept"], solver="cholesky")
+        return model.fit(x, y).predict(xt)
+    if kind == "dlinear":
+        lookback, kernel = params["lookback"], params["kernel"]
+        design = dlinear_design(x, lookback, kernel)
+        mean, target = design.mean(axis=0), y.mean()
+        u, s, vt = np.linalg.svd(design - mean, full_matrices=False)
+        weights = np.divide(s, s * s + params["alpha"], out=np.zeros_like(s), where=s > 1e-12)
+        coefficients = vt.T @ (weights * (u.T @ (y - target)))
+        return (dlinear_design(xt, lookback, kernel) - mean) @ coefficients + target
+
+    model = LGBMRegressor(
+        objective="regression", learning_rate=params["learning_rate"],
+        n_estimators=params["num_trees"], num_leaves=params["num_leaves"],
+        max_bin=params["max_bins"], reg_lambda=params["lambda_l2"],
+        min_child_samples=params["min_data_in_leaf"], random_state=params["seed"],
+        n_jobs=1, deterministic=True, force_col_wise=True, verbosity=-1,
+    ).fit(x, y)
+    return model.booster_.predict(xt, num_threads=1)
 
 
 def reference(kind, params, train, validation, work):
+    if kind != "tide":
+        start = perf_counter()
+        predictions = predict(kind, params, train, validation)
+        return predictions, perf_counter() - start
+
     x, y = train
     xt, _ = validation
-    data = {"x_train": x, "y_train": y, "x_test": xt}
-    if kind == "ridge":
-        model = RidgeRegressor().train(data, alpha=params["alpha"], fit_intercept=True)
-        return model.predict(data)["_preds"]
-    if kind == "dlinear":
-        import polars as pl
-
-        lookback = params["lookback"]
-        for key, values in (("x_train", x), ("x_test", xt)):
-            channels = windows(values, lookback)
-            data[key] = pl.DataFrame({
-                f"ret_1_lag_{lag}": channels[:, column]
-                for column, lag in enumerate(range(lookback - 1, -1, -1))
-            })
-        model = DLinearRegressor().train(data, alpha=params["alpha"], kernel_size=params["kernel"])
-        return model.predict(data)["_preds"]
-    if kind == "lightgbm":
-        model = LGBMRegressor(
-            objective="regression", learning_rate=params["learning_rate"],
-            n_estimators=params["num_trees"], num_leaves=params["num_leaves"],
-            max_bin=params["max_bins"], reg_lambda=params["lambda_l2"],
-            min_child_samples=params["min_data_in_leaf"], random_state=params["seed"],
-            n_jobs=1, deterministic=True, force_col_wise=True, verbosity=-1,
-        ).fit(x, y)
-        return model.booster_.predict(xt, num_threads=1)
-
-    input_path, output_path = work / "windows.npz", work / "reference.bin"
-    lookback = params["lookback"]
+    input_path, output_path = work / "arrays.npz", work / "reference.bin"
     np.savez(
         input_path,
-        train=windows(x.astype("float32"), lookback), labels=y.astype("float32"),
-        test=windows(xt.astype("float32"), lookback),
+        train=x[:, 0].astype("float32"), labels=y.astype("float32"),
+        test=xt[:, 0].astype("float32"),
     )
     env = dict(
         os.environ, TF_USE_LEGACY_KERAS="0", OMP_NUM_THREADS="1",
@@ -100,11 +108,22 @@ def reference(kind, params, train, validation, work):
          env["TERASWEEP_TIDE_SOURCE"], input_path, json.dumps(params), output_path],
         env=env, check=True,
     )
-    return np.fromfile(output_path, dtype="<f8")
+    result = np.fromfile(output_path, dtype="<f8")
+    return result[1:], float(result[0])
 
 
 def bits_equal(a, b):
     return np.array_equal(a.view("u8"), b.view("u8"))
+
+
+def check_parity(kind, actual, expected):
+    np.testing.assert_allclose(actual, expected, atol=TOLERANCE, rtol=TOLERANCE)
+    if any(f"{a:.10f}" != f"{b:.10f}" for a, b in zip(actual.flat, expected.flat)):
+        raise AssertionError(f"{kind} predictions differ at ten decimal places")
+    identical = bits_equal(actual, expected)
+    if kind in ("lightgbm", "tide") and not identical:
+        raise AssertionError(f"{kind} predictions differ from upstream at the bit level")
+    return identical, float(np.abs(actual - expected).max())
 
 
 def audit(kind, cases, binary, work):
@@ -115,17 +134,12 @@ def audit(kind, cases, binary, work):
     for params in cases:
         request = dict(version=1, train=train, test=validation, model=dict(kind=kind, **params))
         predictions.append(fit(request, binary)["predictions"])
-        references.append(reference(kind, params, train_data, validation_data, work))
+        references.append(reference(kind, params, train_data, validation_data, work)[0])
         plan.append(" ".join(validate_request(request)))
 
     actual = np.asarray(predictions, dtype="float64")
     expected = np.asarray(references, dtype="float64")
-    np.testing.assert_allclose(actual, expected, atol=TOLERANCE, rtol=TOLERANCE)
-    if any(f"{a:.10f}" != f"{b:.10f}" for a, b in zip(actual.flat, expected.flat)):
-        raise AssertionError(f"{kind} predictions differ at ten decimal places")
-    bit_equal = bits_equal(actual, expected)
-    if kind in ("lightgbm", "tide") and not bit_equal:
-        raise AssertionError(f"{kind} predictions differ from upstream at the bit level")
+    bit_equal, max_error = check_parity(kind, actual, expected)
 
     plan_path = work / "models.txt"
     plan_path.write_text("\n".join([*plan, plan[0]]) + "\n", encoding="utf-8")
@@ -142,28 +156,58 @@ def audit(kind, cases, binary, work):
 
     return {
         "fits": len(cases), "predictions": actual.size, "bit_identical": bit_equal,
-        "max_abs_error": float(np.abs(actual - expected).max()),
+        "max_abs_error": max_error,
         "sweep": {key: receipt[key] for key in ("trials", "unique_fits", "elapsed_seconds")},
         "best_trial": winner, "validation_mae": receipt["best"]["mae"],
+    }
+
+
+def single_fit(kind, params, binary, work, samples):
+    fixture = FIXTURES / DATASET[kind]
+    train, validation = (str(fixture / f"{part}.bin") for part in ("train", "validation"))
+    train_data, validation_data = matrix(train), matrix(validation)
+    request = dict(version=1, train=train, test=validation, model=dict(kind=kind, **params))
+    native_times, reference_times, errors = [], [], []
+    for _ in range(samples):
+        actual = fit(request, binary)
+        expected, elapsed = reference(kind, params, train_data, validation_data, work)
+        predictions = np.asarray(actual["predictions"], dtype="float64")
+        _, max_error = check_parity(kind, predictions, expected)
+        native_times.append(actual["fit_predict_seconds"])
+        reference_times.append(elapsed)
+        errors.append(max_error)
+
+    return {
+        "settings": params, "samples": samples, "max_abs_error": max(errors),
+        "terasweep_seconds": native_times, "reference_seconds": reference_times,
+        "reference_over_terasweep_median": median(reference_times) / median(native_times),
     }
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
-    parser.add_argument("--quick", action="store_true", help="check one setting per model")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--quick", action="store_true", help="check one setting per model")
+    mode.add_argument("--single-fit-samples", type=int, metavar="N",
+                      help="time N independent fits and predictions for the first setting")
     parser.add_argument("models", nargs="*", metavar="MODEL", help=", ".join(DATASET))
     args = parser.parse_args()
     models = args.models or list(DATASET)
     if set(models) - DATASET.keys():
         parser.error("unsupported model name")
+    if args.single_fit_samples is not None and args.single_fit_samples < 1:
+        parser.error("--single-fit-samples must be positive")
     os.environ.setdefault("TERASWEEP_LIGHTGBM_LIB", _LIB._name)
 
     results = {}
-    with TemporaryDirectory() as temp:
+    with TemporaryDirectory() as temp, threadpool_limits(limits=1):
         for model in models:
             cases = settings()[model]
-            results[model] = audit(model, cases[:1] if args.quick else cases, args.binary.resolve(), Path(temp))
+            if args.single_fit_samples is not None:
+                results[model] = single_fit(model, cases[0], args.binary.resolve(), Path(temp), args.single_fit_samples)
+            else:
+                results[model] = audit(model, cases[:1] if args.quick else cases, args.binary.resolve(), Path(temp))
     print(json.dumps(results, indent=2))
 
 

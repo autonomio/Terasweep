@@ -14,13 +14,13 @@ Compare model settings on a labeled validation split using mean absolute error.
 
 ### Single fit and predict
 
-On Apple M1 Max, a single Ridge fit and prediction pass took **0.223 ms** in
-Terasweep versus **1.987 ms** with scikit-learn's Cholesky Ridge through Limen.
-That's **8.91×** on the same prepared matrices, with a maximum absolute
-prediction difference of `5.77e-15`. The same benchmark recorded **26.79×** for
-DLinear, **1.26×** for LightGBM, and **1.24×** for TiDE against their respective
-references. Each timing is one observation of the combined fit and prediction
-path. [Single-fit method and results](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/single-model/README.md)
+On Apple M1 Max, Ridge fit and predicted in **0.019 ms** in Terasweep and
+**1.031 ms** with direct scikit-learn Cholesky Ridge. That's about **55×** on
+the concrete strength fixture, with a maximum prediction difference of
+`5.68e-14`. On their respective fixtures, DLinear was **16×** faster,
+LightGBM was **1.74×** faster, and TiDE was roughly even. Each timing is a
+median over fresh fits and one prediction pass per fit.
+[Single-fit method and all four results](docs/research/model-reference-parity.md#single-fit-performance)
 
 ### Parameter sweeps
 
@@ -29,29 +29,9 @@ each distinct model configuration. Sharing training statistics across settings
 and reusing predictions and scores across trials reduces how often that work
 runs.
 
-The archived Apple M1 Max pilot matched the reference predictions, signals,
-and sweep winners across linear models, boosted trees, and TiDE's MLP
-encoder-decoder. The uncached path used each model's established reference,
-including scikit-learn's Cholesky Ridge through Limen. It refit every trial
-and applied the same scoring rules. The reference times below exclude backend
-setup. [Benchmark method](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/README.md)
-
-| Model | Matched trials | Uncached loop | Terasweep | Measured speedup | Terasweep at 1 billion trials |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Ridge | 10,000 | 2.223 s | 2.524 ms | **881×** | 51.38 s |
-| DLinear | 10,000 | 2.054 s | 1.755 ms | **1,170×** | 72.46 s |
-| LightGBM | 10,000 | 31.547 s | 22.924 ms | **1,376×** | 77.48 s |
-| TiDE | 1,000 | 347.227 s | 3.413 s | **102×** | 75.61 s |
-
-Each billion-trial run reused 4 to 18 distinct fits and cached scoring work
-across sampled trials. TiDE had the largest projected speedup at that scale.
-The uncached estimate extrapolates its measured 1,000-trial loop. The current
-package applies fit and training-statistic reuse to generic validation-MAE
-sweeps. [Measurement receipt and projections](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/sweep-scaling/results-m1-max.json) · [Current reference audit](docs/research/model-reference-parity.md)
-
-A separate Ridge ablation in the same Rust runner measured a **115×** speedup
+An archived Ridge ablation in the same Rust runner measured a **115×** speedup
 from sharing training statistics, fitted predictions, and scores.
-[Factorization ablation](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/reports/terasweep_reverse_funnel_report.md#outcome)
+[Factorization ablation](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/reports/terasweep_reverse_funnel_report.md#outcome) · [Historical sweep measurements](docs/research/README.md)
 
 ## Key features
 
@@ -107,8 +87,8 @@ Rust library. [Sweep interface and plan format](docs/sweeps.md)
 
 | Model | Input | Reference |
 | --- | --- | --- |
-| [Ridge](docs/models/ridge.md) | Prepared features and a continuous target | Limen Ridge with scikit-learn Cholesky |
-| [DLinear](docs/models/dlinear.md) | One observed series and a next-value target | Limen DLinear with NumPy SVD |
+| [Ridge](docs/models/ridge.md) | Prepared features and a continuous target | scikit-learn Ridge with Cholesky |
+| [DLinear](docs/models/dlinear.md) | One observed series and a next-value target | SciPy moving average and NumPy SVD |
 | [LightGBM](docs/models/lightgbm.md) | Prepared features and a continuous target | Official Python LightGBM regression |
 | [TiDE](docs/models/tide.md) | One observed series and a next-value target | Google Research TiDE |
 

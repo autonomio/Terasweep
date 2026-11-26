@@ -18,7 +18,7 @@ each with 1 feature column.
 
 Pinned Google Research TiDE on independently prepared windows. The audit checks eight separately fitted
 configurations and all 512 predictions to ten decimal places. Predictions were bit-identical.
-[Reproduce](../research/model-reference-parity.md#live-audit)
+[Reproduce](../research/model-reference-parity.md#live-audit) · [Single-fit performance](../research/model-reference-parity.md#single-fit-performance)
 
 ## Sweep
 
