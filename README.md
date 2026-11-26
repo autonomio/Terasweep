@@ -1,8 +1,9 @@
 # Terasweep
 
-Terasweep is a Rust package that tests how far classic precomputation and
-memoization can speed up parameter sweeps while preserving reference-model
-predictions and sweep winners.
+Terasweep is a Rust package that tests how much faster established models can
+fit and predict on the same inputs while matching their reference outputs.
+It then uses classic precomputation and memoization to reduce repeated work
+across parameter trials.
 
 [Measured performance](#measured-performance) · [Key features](#key-features) · [Install](#install) · [Examples](#examples) · [Model cards](#model-cards) · [Research and learning](#research-and-learning) · [Support](#support) · [Cite](#citations) · [Download](https://github.com/autonomio/Terasweep/archive/refs/heads/main.zip)
 
@@ -10,6 +11,23 @@ Fit Ridge, DLinear, LightGBM regression, or TiDE on prepared numeric matrices.
 Compare model settings on a labeled validation split using mean absolute error.
 
 ## Measured performance
+
+### Single fit and predict
+
+On Apple M1 Max, a single Ridge fit and prediction pass took **0.223 ms** in
+Terasweep versus **1.987 ms** with scikit-learn's Cholesky Ridge through Limen.
+That's **8.91×** on the same prepared matrices, with a maximum absolute
+prediction difference of `5.77e-15`. The same benchmark recorded **26.79×** for
+DLinear, **1.26×** for LightGBM, and **1.24×** for TiDE against their respective
+references. Each timing is one observation of the combined fit and prediction
+path. [Single-fit method and results](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/single-model/README.md)
+
+### Parameter sweeps
+
+A sweep compounds the gains. Faster fitting and prediction lower the cost of
+each distinct model configuration. Sharing training statistics across settings
+and reusing predictions and scores across trials reduces how often that work
+runs.
 
 The archived Apple M1 Max pilot matched the reference predictions, signals,
 and sweep winners across linear models, boosted trees, and TiDE's MLP
