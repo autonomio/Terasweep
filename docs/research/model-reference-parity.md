@@ -27,7 +27,8 @@ Terasweep single fit.
 
 From the checkout, install the audit dependencies and configure the
 [TiDE backend](../backends.md#tide). On macOS, LightGBM also needs the
-[OpenMP runtime](../backends.md#lightgbm).
+[OpenMP runtime](../backends.md#lightgbm). For this audit, Terasweep loads the
+same LightGBM shared library as the Python reference.
 
 ```sh
 python3.12 -m venv runs/reference-venv
@@ -63,7 +64,10 @@ windows where needed, fitting, and prediction. It excludes process startup,
 imports, backend library loading, matrix decoding, and output serialization.
 Terasweep's fit timer starts after its input and model validation. The public
 Python APIs time any validation they perform inside fit and predict. The run
-uses single-threaded backends and checks every prediction for parity.
+uses single-threaded backends and checks every prediction for parity. These
+times describe fit plus prediction on this workload. A sweep has a separate
+timer that includes model setup and scoring.
+[Sweep timing](../sweeps.md#reuse-and-timing)
 
 Local medians on Apple M1 Max, macOS 26.6.2, Rust 1.63.0, and Python 3.12.
 The dependency versions are pinned above and in the TiDE backend instructions.

@@ -40,7 +40,10 @@ actual matrix bytes by hash and lists predictions in test-row order. Sweeps
 use labeled validation matrices in this same format. [Sweep interface](sweeps.md)
 
 A fit result contains `version`, `model`, train and test fingerprints,
-`predictions`, and `fit_predict_seconds`. CLI errors exit nonzero with a JSON
-error on stderr. MCP reports tool failures with `isError`. Training settings,
-input format, and backend requirements are specified on the
+`predictions`, and `fit_predict_seconds`. Each request fits a new model and
+makes one prediction pass. The timer covers model work after input validation
+and backend loading. [Timing method](research/model-reference-parity.md#single-fit-performance)
+
+CLI errors exit nonzero with a JSON error on stderr. MCP reports tool failures
+with `isError`. For training settings and backend requirements, see the
 [model cards](../README.md#model-cards).

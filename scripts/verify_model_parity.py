@@ -198,7 +198,8 @@ def main():
         parser.error("unsupported model name")
     if args.single_fit_samples is not None and args.single_fit_samples < 1:
         parser.error("--single-fit-samples must be positive")
-    os.environ.setdefault("TERASWEEP_LIGHTGBM_LIB", _LIB._name)
+    # Keep the native adapter and the reference on the same LightGBM build.
+    os.environ["TERASWEEP_LIGHTGBM_LIB"] = _LIB._name
 
     results = {}
     with TemporaryDirectory() as temp, threadpool_limits(limits=1):

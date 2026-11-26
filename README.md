@@ -16,29 +16,31 @@ Compare model settings on a labeled validation split using mean absolute error.
 
 On Apple M1 Max, Ridge fit and predicted in **0.019 ms** in Terasweep and
 **1.031 ms** with direct scikit-learn Cholesky Ridge. That's about **55×** on
-the concrete strength fixture, with a maximum prediction difference of
-`5.68e-14`. On their respective fixtures, DLinear was **16×** faster,
-LightGBM was **1.74×** faster, and TiDE was roughly even. Each timing is a
-median over fresh fits and one prediction pass per fit.
+the concrete strength fixture with 192 training rows and 64 prediction rows.
+The maximum absolute prediction difference was `5.68e-14`. On their respective
+fixtures, DLinear was **16×** faster against SciPy and NumPy, LightGBM was
+**1.74×** faster against its official Python API, and TiDE was roughly even
+against Google Research TiDE. The medians cover one fresh fit and prediction
+pass on prepared inputs, with no sweep or scoring. Terasweep's timer starts
+after its input checks. The reference timings include the checks inside their
+model APIs.
 [Single-fit method and all four results](docs/research/model-reference-parity.md#single-fit-performance)
 
 ### Parameter sweeps
 
-A sweep compounds the gains. Faster fitting and prediction lower the cost of
-each distinct model configuration. Sharing training statistics across settings
-and reusing predictions and scores across trials reduces how often that work
-runs.
+A sweep compounds single-fit gains where they exist. Shared statistics, designs,
+or backend setup can lower the cost of distinct fits. Repeated settings share
+one fit and score. The current audit checks that a nine-entry plan completes
+eight fits and returns the direct reference winner for each model.
 
-An archived Ridge ablation in the same Rust runner measured a **115×** speedup
-from sharing training statistics, fitted predictions, and scores.
-[Factorization ablation](https://github.com/autonomio/Terasweep/blob/d5dd91675e647e38dd2f6f209e68eaa71e27c1ab/benchmarks/reports/terasweep_reverse_funnel_report.md#outcome) · [Historical sweep measurements](docs/research/README.md)
+[Current sweep audit](docs/research/model-reference-parity.md#recorded-result) · [Historical sweep measurements](docs/research/README.md#archived-pilot)
 
 ## Key features
 
 - Ordered sweeps fit and score each distinct training configuration once, with deterministic tie handling.
 - Ridge shares training statistics across model settings. DLinear shares window designs, LightGBM shares backend setup, and TiDE batches fits by seed.
 - The single-model CLI and local agent interface use the same Rust fit and receipt. [Agent interface](docs/agents.md)
-- The correctness suite checks native predictions to ten decimal places. An optional audit compares all four models with upstream and checks their sweep winners. [Reference audit](docs/research/model-reference-parity.md)
+- The fast correctness suite checks Ridge and DLinear predictions to ten decimal places. The optional audit checks all four models against direct references and verifies their sweep winners. [Reference audit](docs/research/model-reference-parity.md)
 
 ## Install
 
@@ -62,7 +64,8 @@ TensorFlow environment. [Backend setup](docs/backends.md)
 ### Run a model
 
 The bundled example fits Ridge on concrete measurements. The receipt includes
-model settings, matrix dimensions and SHA-256 hashes, predictions, and fit time.
+model settings, matrix dimensions and SHA-256 hashes, predictions, and combined
+fit and prediction time.
 
 ```sh
 python3 scripts/model_run.py fit docs/examples/ridge.json
